@@ -1,18 +1,11 @@
 // Internal & 3rd party functional libraries
 // Custom functional libraries
-import { ActionInfo } from '@hololinked/mobx-render-engine/stub-evaluator'
 // Internal & 3rd party component libraries
 // Custom component libraries 
 
 // This file mostly follows python naming conventions - PEP8 - because this information is loaded from 
 // python side
 
-export type PlotlyInfo = {
-    type : string,
-    plot : string,
-    sources : { [key : string] : string },
-    actions : { [key : string] : ActionInfo }
-}
 
 export type ScadaInfo = {
     access_type : string
@@ -26,59 +19,59 @@ export type ScadaInfo = {
     http_request_as_argument : boolean 
 }
 
-export type ParameterInfo = {
+export type PropertyInfo = {
+    name : string,
     allow_None : boolean,
-    class_member : boolean,
     constant : boolean,
+    readonly : boolean,
+    doc : string,
+    label : string,
+    default : any,
+    class_member : boolean,
+    observable : boolean,
     db_commit : boolean,
     db_init : boolean,
     db_memorized : boolean,
     deepcopy_default : boolean,
     per_instance_descriptor : boolean,
-    default : any,
-    doc : string,
     metadata : any,
-    name : string,
-    readonly : boolean,
     parameter_type : string
     owner : string
     owner_instance_name : string
     scada_info: ScadaInfo
     instruction : string 
-    visualization? : PlotlyInfo 
 }
 
-export type MethodInfo = {
-    instruction : string
-    module : string
+export type ActionInfo = {
     name : string
     qualname : string
+    module : string
     doc : string
-    kwdefaults : any
     defaults : any
-    scada_info : ScadaInfo
+    kwdefaults : any
     signature : Array<string> 
     owner : string
     owner_instance_name : string
+    scada_info : ScadaInfo
+    instruction : string
 }
 
 export type EventInfo = {
     name : string 
-    instruction : string 
+    address : string 
     owner : string 
     owner_instance_name : string 
-    address : string 
+    instruction : string 
 }
+
 
 export type RemoteObjectInfo = {
     instance_name : string 
-    parameters : ParameterInformation[] 
-    methods : MethodInformation[]
+    properties : PropertyInformation[] 
+    methods : ActionInformation[]
     events : EventInformation[]
     classdoc : string[] | null
     inheritance : string[]
-    documentation : any
-    GUI : null | { actions : { [key : string] : any}, UIComponents : { [key : string] : any}}
 }
 
 
@@ -91,6 +84,7 @@ export class ResourceInformation {
     owner : string
     owner_instance_name : string
     type : string
+    label : string
 
     constructor(data : any) {
         this._doc = data.doc
@@ -99,7 +93,7 @@ export class ResourceInformation {
         this.type = data.type
         this.owner = data.owner
         this.owner_instance_name = data.owner_instance_name
-        
+        this.label = data.label ? data.label : ''
     }
 
     get doc() : string {
@@ -120,11 +114,13 @@ export class ResourceInformation {
 
 
 
-export class ParameterInformation extends ResourceInformation {
+export class PropertyInformation extends ResourceInformation {
 
     allow_None : boolean
-    class_member : boolean
     constant : boolean
+    readonly : boolean
+    class_member : boolean
+    observable : boolean
     db_commit : boolean
     db_init : boolean
     db_memorized : boolean
@@ -132,12 +128,10 @@ export class ParameterInformation extends ResourceInformation {
     per_instance_descriptor : boolean
     default : any
     metadata : any
-    readonly : boolean
-    visualization : PlotlyInfo | null 
-    _supported_instance_names? : { [key : string] : string }
     fullpath : string 
-    
-    constructor(data : ParameterInfo) {
+    _supported_instance_names? : { [key : string] : string }
+
+    constructor(data : PropertyInfo) {
         super(data)
         this.allow_None = data.allow_None
         this.class_member = data.class_member
@@ -150,12 +144,14 @@ export class ParameterInformation extends ResourceInformation {
         this.default = data.default
         this.metadata = data.metadata
         this.readonly = data.readonly
-        this.visualization = data.visualization ? data.visualization : null 
+        this.observable = data.observable
         this.fullpath = data.instruction
     }
 
+    // property's own attributes for which chips should be shown
     chipKeys : string[] = ['allow_None' , 'class_member', 'constant', 'db_commit', 
-    'db_init', 'db_memorized', 'deepcopy_default', 'per_instance_descriptor', 'readonly']
+    'db_init', 'db_memorized', 'deepcopy_default', 'per_instance_descriptor', 'readonly',
+    'observable']
 
     chipKeysSensibleString = {
         'allow_None' : "allows None" , 
@@ -166,17 +162,19 @@ export class ParameterInformation extends ResourceInformation {
         'db_memorized' : 'database committed at write & loaded at startup', 
         'deepcopy_default' : 'deep-copied default value', 
         'per_instance_descriptor' : 'per instance descriptor',
-        'readonly' : 'read-only'
+        'readonly' : 'read-only',
+        'observable' : 'observable'
     }
 
-    JSONInputParameterTypes = ['RemoteParameter', 'ClassSelector', 'Tuple', 'List', 'TypedList', 
+    // types for which JSON input field should be shown instead of raw input field
+    JSONInputParameterTypes = ['Property', 'ClassSelector', 'Tuple', 'List', 'TypedList', 
                     'TypedDict', 'Iterable', 'Selector', 'TupleSelector', 'FileSelector', 
                     'MultiFileSelector', 'TypedKeyMappingsDict']
 
     get chips() : string[] {
         let Chips = []
         for(var key of Object.keys(this.chipKeysSensibleString)){
-            if(this[key as keyof ParameterInformation])
+            if(this[key as keyof PropertyInformation])
                 // @ts-ignore
                 Chips.push(this.chipKeysSensibleString[key])
         }
@@ -194,17 +192,17 @@ export class ParameterInformation extends ResourceInformation {
 
 
 
-export class MethodInformation extends ResourceInformation {
+export class ActionInformation extends ResourceInformation {
 
     module : string
     qualname : string
     kwdefaults : any
     defaults : any
     signature : Array<string> 
-    _supported_instance_names? : { [key : string] : string }
     fullpath : string
+    _supported_instance_names? : { [key : string] : string }
     
-    constructor(data : MethodInfo) {
+    constructor(data : ActionInfo) {
         super(data)
         // @ts-ignore
         this.name = data.obj_name
@@ -237,22 +235,22 @@ export class EventInformation extends ResourceInformation {
 
 export class RemoteObjectInformation  {
     instance_name : string 
-    parameters : ParameterInformation[] 
-    methods : MethodInformation[]
+    properties : PropertyInformation[] 
+    methods : ActionInformation[]
     events : EventInformation[]
     classdoc : string[] | null 
     inheritance : string[]
     documentation : any 
     _GUI : null | { actions : { [key : string] : any}, UIComponents : { [key : string] : any}}
     _updatedGUIStateManager : boolean
-    _sortedParameters : { [key : string] : ParameterInformation[] } | null
-    _sortedMethods : { [key : string] : MethodInformation[] } | null 
+    _sortedProperties : { [key : string] : PropertyInformation[] } | null
+    _sortedMethods : { [key : string] : ActionInformation[] } | null 
     _sortedEvents : { [key : string] : EventInformation[] } | null 
-    _documentationParameters : ParameterInformation[] | null
+    _documentationProperties : PropertyInformation[] | null
 
     constructor(info : RemoteObjectInfo) {
         this.instance_name = info.instance_name
-        this.parameters = info.parameters
+        this.properties = info.properties
         this.methods = info.methods 
         this.events = info.events
         this.classdoc = info.classdoc 
@@ -260,10 +258,10 @@ export class RemoteObjectInformation  {
         this.documentation = info.documentation
         this._updatedGUIStateManager = false
         this._GUI = info.GUI
-        this._sortedParameters = null 
+        this._sortedProperties = null 
         this._sortedEvents = null 
         this._sortedMethods = null 
-        this._documentationParameters = null
+        this._documentationProperties = null
     }
 
     get classDoc(){
@@ -271,27 +269,27 @@ export class RemoteObjectInformation  {
         return doc 
     }
 
-    get documentationParameters() {
-        if(!this._documentationParameters) {
+    get documentationProperties() {
+        if(!this._documentationProperties) {
             let dparam = []
-            for(let param of this.parameters) {
+            for(let param of this.properties) {
                 if(param.type === 'DocumentationFolder' )
                 dparam.push(param)
             }
-            this._documentationParameters = dparam
+            this._documentationProperties = dparam
         }
-        return this._documentationParameters
+        return this._documentationProperties
     }
 
-    get sortedParameters() {
-        if (!this._sortedParameters) {
-            // console.log("calculating parameters")
-            let params : { [key : string] : Array<ParameterInformation> } = {
+    get sortedProperties() {
+        if (!this._sortedProperties) {
+            // console.log("calculating properties")
+            let params : { [key : string] : Array<PropertyInformation> } = {
                 "Visualization" : [],
                 "RemoteObject" : [],
             }
             let existing_names : string[] = []
-            for(let param of this.parameters) {
+            for(let param of this.properties) {
                 if(param.visualization) 
                     params["Visualization"].push(param)
                 else if(param.type === 'FileServer' || param.type === 'DocumentationFolder' )
@@ -317,10 +315,10 @@ export class RemoteObjectInformation  {
                     }
                 }
             }
-            let inheritanceSortedParams : { [key : string] : Array<ParameterInformation> } = {
+            let inheritanceSortedParams : { [key : string] : Array<PropertyInformation> } = {
                 "Visualization" : params["Visualization"]
             }
-            let addAtEnd : { [key : string] : Array<ParameterInformation> } = {}
+            let addAtEnd : { [key : string] : Array<PropertyInformation> } = {}
             for (let class_ of this.inheritance) {
                 if(params[class_]) {
                     if(class_ === 'RemoteObject' || class_ === 'RemoteSubobject' ) 
@@ -336,21 +334,21 @@ export class RemoteObjectInformation  {
                 ...addAtEnd
             }
             if (Object.keys(inheritanceSortedParams).length === 1) {
-                this._sortedParameters = {
+                this._sortedProperties = {
                     "Visualization" : [],
                     "RemoteObject" : []
                 }
             }
             else 
-                this._sortedParameters = inheritanceSortedParams
+                this._sortedProperties = inheritanceSortedParams
             }
-        return this._sortedParameters
+        return this._sortedProperties
     }
 
     get sortedMethods() {
         if (!this._sortedMethods) {
             // console.log("calculating methods")
-            let methods : { [key : string] : Array<MethodInformation> } = {
+            let methods : { [key : string] : Array<ActionInformation> } = {
                 "Private" : []
             }
             let existing_names : string[] = []
@@ -379,8 +377,8 @@ export class RemoteObjectInformation  {
                     }
                 }
             }
-            let inheritanceSortedMethods : { [key : string] : Array<MethodInformation> } = {}
-            let addAtEnd : { [key : string] : MethodInformation[] } = {}
+            let inheritanceSortedMethods : { [key : string] : Array<ActionInformation> } = {}
+            let addAtEnd : { [key : string] : ActionInformation[] } = {}
             for (let class_ of this.inheritance) {
                 if(methods[class_]) {
                     if(class_ === 'RemoteObject' || class_ === 'RemoteSubobject' ) 

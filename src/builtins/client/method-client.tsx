@@ -1,5 +1,5 @@
 // Internal & 3rd party functional libraries
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { AxiosResponse } from "axios";
 // Custom functional libraries
 import { getFormattedTimestamp } from "@hololinked/mobx-render-engine/utils/misc";
@@ -12,17 +12,17 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-crimson_editor"
 import "ace-builds/src-noconflict/ext-language_tools";
 // Custom component libraries 
-import { MethodInformation } from "./thing-info";
+import { ActionInformation } from "./thing-info";
 import { TabPanel } from "../reuse-components";
 import UnstyledTable from "./doc-viewer";
 import { DocRowTitle } from "./property-client";
 import { RemoteObjectClientState } from "./state";
+import { ClientContext } from "./view";
     
     
 
 type SelectedMethodWindowProps = {
-    method : MethodInformation
-    clientState : RemoteObjectClientState
+    method : ActionInformation
 }
 
 const methodFields = ['Execute', 'Doc']
@@ -73,8 +73,7 @@ export const SelectedMethodWindow = ( props : SelectedMethodWindowProps) => {
 
 type MethodTabComponentsProps = {
     name : string
-    method : MethodInformation
-    clientState : RemoteObjectClientState
+    method : ActionInformation
 }
 
 export const MethodTabComponents = (props : MethodTabComponentsProps) => {
@@ -88,11 +87,12 @@ export const MethodTabComponents = (props : MethodTabComponentsProps) => {
 
 
 type MethodExecutionProps = {
-    method : MethodInformation
-    clientState : RemoteObjectClientState
+    method : ActionInformation
 }
 
 export const MethodExecutionClient = (props : MethodExecutionProps) => {
+
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
     
     const [fetchExecutionLogs, setFetchExecutionLogs] = useState<boolean>(false)                                                                                               
     const [inputChoice, setInputChoice ] = useState('JSON')
@@ -134,30 +134,30 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
                 url : _fullpath, 
                 method : props.method.scada_info.http_method[0] as any, 
                 data : data, 
-                baseURL : props.clientState.domain,
+                baseURL : clientState.domain,
                 // httpsAgent: new https.Agent({ rejectUnauthorized: false })
             }) as AxiosResponse
             let executionTime = Date.now() - requestTime_
-            props.clientState.setLastResponse(response)
+            clientState.setLastResponse(response)
             if(response.status >= 200 && response.status < 300) {
-                if(props.clientState.stringifyOutput) 
+                if(clientState.stringifyOutput) 
                     console.log("\n" + JSON.stringify(response.data, null, 2))
                 else 
                     console.log(response.data)
                 if(response.data && response.data.state) 
-                    props.clientState.setRemoteObjectState(response.data.state[props.method.owner_instance_name])
-                if(props.clientState.hasError)
-                    props.clientState.resetError()
+                    clientState.setRemoteObjectState(response.data.state[props.method.owner_instance_name])
+                if(clientState.hasError)
+                    clientState.resetError()
             }
             else if(response.data && response.data.exception) {
-                props.clientState.setError(response.data.exception.message, response.data.exception.traceback)
-                if(props.clientState.stringifyOutput)
+                clientState.setError(response.data.exception.message, response.data.exception.traceback)
+                if(clientState.stringifyOutput)
                     console.log(JSON.stringify(response, null, 2))
                 else 
                     console.log(response)
             }
             else {
-                if(props.clientState.stringifyOutput)
+                if(clientState.stringifyOutput)
                     console.log(JSON.stringify(response, null, 2))
                 else 
                     console.log(response)
@@ -167,9 +167,9 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
         } 
         catch(error : any){
             // console.log(error)
-            props.clientState.setError(error.message, null)
+            clientState.setError(error.message, null)
         } 
-    }, [props.clientState, props.method, fullpath, fetchExecutionLogs, kwargsValue, timeout])
+    }, [clientState, props.method, fullpath, fetchExecutionLogs, kwargsValue, timeout])
 
     const handleTimeoutChange = useCallback((event : any) => {
         let oldTimeout =  timeout 
@@ -350,13 +350,13 @@ export const MethodDocViewer = (props : any) => {
                     { id   : "URL",
                     name : <DocRowTitle>URL</DocRowTitle>, 
                     info : <Link 
-                                onClick={() => window.open(props.clientState.domain + props.method.fullpath)} 
+                                onClick={() => window.open(clientState.domain + props.method.fullpath)} 
                                 sx={{display : 'flex', alignItems : "center", cursor:'pointer', fontSize : 14,
                                         color : "#0000EE" }}
                                 underline="hover"
                                 variant="caption"
                             >
-                                {props.clientState.domain + props.method.fullpath}
+                                {clientState.domain + props.method.fullpath}
                             </Link>
                     },
                     { id : "STATE" , name : <DocRowTitle>STATE</DocRowTitle>, info : props.method.state},

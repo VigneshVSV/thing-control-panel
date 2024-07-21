@@ -9,13 +9,14 @@ import DOMPurify from 'dompurify';
 import { asyncRequest } from "@hololinked/mobx-render-engine/utils/http";
 // Internal & 3rd party component libraries
 import {TablePagination, tablePaginationClasses as classes } from '@mui/base/TablePagination';
-import { Box, Button, Stack, Typography,  TextField, ButtonGroup, 
+import { Button, Stack, Typography,  TextField, ButtonGroup, 
      IconButton, Autocomplete } from "@mui/material"
 import OpenInNewTwoToneIcon from '@mui/icons-material/OpenInNewTwoTone';
 import DownloadTwoToneIcon from '@mui/icons-material/DownloadTwoTone'
 // Custom component libraries 
-import { ParameterInformation } from './thing-info';
+import { PropertyInformation } from './thing-info';
 import { RemoteObjectClientState } from './state';
+import { ClientContext } from './view';
 
 
 
@@ -29,7 +30,7 @@ export default function UnstyledTable(props : { rows : Array<any>, tree : string
         page > 0 ? Math.max(0, (1 + page) * rowsPerPage - props.rows.length) : 0;
 
     const handleChangePage = (
-        event: React.MouseEvent<HTMLButtonElement> | null,
+        _ : React.MouseEvent<HTMLButtonElement> | null,
         newPage: number,
     ) => {
         setPage(newPage);
@@ -156,19 +157,17 @@ const CustomTablePagination = styled(TablePagination)`
 
 
 
-type ClassDocWindowProps = {
-    clientState : RemoteObjectClientState
-}
 
 type fileSourceType = {
-    param : ParameterInformation 
+    param : PropertyInformation 
     paramName : string
     value : string
 }
 
-export const ClassDocWindow = observer(( props : ClassDocWindowProps ) => {
+export const ClassDocWindow = observer(() => {
 
-    const classDoc = props.clientState.remoteObjectInfo.classDoc
+    const clientState = React.useContext(ClientContext) as RemoteObjectClientState
+    const classDoc = clientState.remoteObjectInfo.classDoc
 
     return (
         <Stack sx={{ flexGrow : 1, display : 'flex' }}> 
@@ -178,27 +177,28 @@ export const ClassDocWindow = observer(( props : ClassDocWindowProps ) => {
                         : "no class doc provided" 
                     }
                 </Typography>
-            <Box sx={{ display : 'flex' }}>
+            {/* <Box sx={{ display : 'flex' }}>
                 <Stack sx = {{ flexGrow : 0.5, display : 'flex' }}>
-                    <PostmanFetcher clientState={props.clientState} />
-                    <FileServer clientState={props.clientState} />
+                    <PostmanFetcher />
+                    <FileServer />
                 </Stack>
-            </Box>
+            </Box> */}
         </Stack>
     )
 })
 
 
 
-const PostmanFetcher = (props : any) => {
+const PostmanFetcher = () => {
 
-    const [postmanDomainPrefix, setDomainPrefix] = useState(props.clientState.domain)
+    const clientState = React.useContext(ClientContext) as RemoteObjectClientState
+    const [postmanDomainPrefix, setDomainPrefix] = useState(clientState.domain)
 
     const getPostmanCollection = useCallback(async() => {
         const response = await asyncRequest({
                 url: `/resources/postman-collection?domain_prefix=${postmanDomainPrefix}`,
                 method : 'GET',
-                baseURL : props.clientState.baseURL,
+                baseURL : clientState.baseURL,
                 // httpsAgent: new https.Agent({ rejectUnauthorized: false })
         }) as AxiosResponse
         if(response.status >= 200 && response.status <= 250) {
@@ -217,8 +217,8 @@ const PostmanFetcher = (props : any) => {
             document.body.removeChild(link);
         }
         else if(response.data.exception) {
-            props.clientState.setError(response.data.exception.message, response.data.exception.traceback)
-            if(props.clientState.stringifyOutput)
+            clientState.setError(response.data.exception.message, response.data.exception.traceback)
+            if(clientState.stringifyOutput)
                 console.log(JSON.stringify(response, null, 2))
             else 
                 console.log(response)
@@ -228,7 +228,7 @@ const PostmanFetcher = (props : any) => {
             console.log(response)
             console.log("could not fetch postman collection")
         }
-    }, [postmanDomainPrefix, props.clientState.baseURL])
+    }, [postmanDomainPrefix, clientState.baseURL])
 
     return (
         <Stack direction='row' sx = {{ display : 'flex' }}>
@@ -268,7 +268,7 @@ const PostmanFetcher = (props : any) => {
 //             const response = await asyncRequest({
 //                 url: prefix + '/files/'  + postfix + '/' + fileSrc.value,
 //                 method : 'GET',
-//                 baseURL : props.clientState.domain,
+//                 baseURL : clientState.domain,
 //                 httpsAgent: new https.Agent({ rejectUnauthorized: false }),
 //                 responseType : 'arraybuffer'
 //             })
@@ -302,12 +302,13 @@ const PostmanFetcher = (props : any) => {
 
 
 
-const FileServer = ( props : { clientState : RemoteObjectClientState } ) => {
+const FileServer = () => {
 
-    const documentationParameters = props.clientState.remoteObjectInfo.documentationParameters 
+    const clientState = React.useContext(ClientContext) as RemoteObjectClientState
+    const documentationParameters = clientState.remoteObjectInfo.documentationParameters 
     const [fileSource, setFileSource] = useState<fileSourceType | null>(null)
 
-    const handleFileSourceChange = useCallback((event : React.SyntheticEvent, src : any) => {
+    const handleFileSourceChange = useCallback((_ : React.SyntheticEvent, src : any) => {
         setFileSource(src as fileSourceType)
     }, [])
 
@@ -317,7 +318,7 @@ const FileServer = ( props : { clientState : RemoteObjectClientState } ) => {
         let parts = fileSource.param.fullpath.split('/')
         let postfix = parts[parts.length-1]
         let prefix = parts.slice(0, parts.length-1).join('/')
-        window.open(props.clientState.domain + prefix + '/files/'  + postfix + '/' + fileSource.value)
+        window.open(clientState.domain + prefix + '/files/'  + postfix + '/' + fileSource.value)
     }, [fileSource])
     
     return (
@@ -332,7 +333,7 @@ const FileServer = ( props : { clientState : RemoteObjectClientState } ) => {
                         onChange={handleFileSourceChange}
                         value={fileSource}
                         options={[].concat(...documentationParameters.map(
-                            (param : ParameterInformation) => {
+                            (param : PropertyInformation) => {
                                 return param.default.map((value : string) => {
                                     return {
                                         param : param, 

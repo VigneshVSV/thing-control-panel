@@ -1,6 +1,6 @@
 'use client'
 // Internal & 3rd party functional libraries
-import { SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
+import { SyntheticEvent, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AxiosRequestConfig, AxiosResponse } from "axios";
 // Custom functional libraries
 import { getFormattedTimestamp } from "@hololinked/mobx-render-engine/utils/misc";
@@ -20,28 +20,29 @@ import "ace-builds/src-noconflict/theme-crimson_editor"
 import "ace-builds/src-noconflict/ext-language_tools";
 // Custom component libraries 
 import { TabPanel } from "../reuse-components";
-import { ParameterInformation, PlotlyInfo } from "./thing-info";
+import { PropertyInformation, PlotlyInfo } from "./thing-info";
 import { RemoteObjectClientState } from "./state";
 import UnstyledTable from "./doc-viewer";
+import { ClientContext } from "./view";
 
 
 
-type SelectedParameterWindowProps = {
-    clientState : RemoteObjectClientState
-    parameter : ParameterInformation
+type SelectedPropertyWindowProps = {
+    parameter : PropertyInformation
 }
 
-const parameterFields = ['Execute', 'Doc', 'Database', 'Visualization']
+const parameterFields = ['Execute', 'Doc']
 
-export const SelectedParameterWindow = (props : SelectedParameterWindowProps) => {
+export const SelectedPropertyWindow = (props : SelectedPropertyWindowProps) => {
     // No need to use observer HOC as either parameter prop changes or child components of this component 
     // read and manipulate client state 
-
+    // const clientState = useContext(ClientContext) as RemoteObjectClientState
+    
     // current tab of parameter fields
     const [parameterFieldsTab, setParameterFieldsTab] = useState(0);
 
     const handleParameterFieldTabChange = useCallback(
-        (event: React.SyntheticEvent, newValue: number) => {
+        (_ : React.SyntheticEvent, newValue: number) => {
             setParameterFieldsTab(newValue);
     }, [])
 
@@ -91,7 +92,6 @@ export const SelectedParameterWindow = (props : SelectedParameterWindowProps) =>
 type ParameterTabComponentsProps = { 
     name : string
     parameter : ParameterInformation
-    clientState : RemoteObjectClientState
 }
 
 export const ParameterTabComponents = (props : ParameterTabComponentsProps) => {
@@ -108,11 +108,11 @@ export const ParameterTabComponents = (props : ParameterTabComponentsProps) => {
 
 type ParameterClientProps = {
     parameter : ParameterInformation
-    clientState : RemoteObjectClientState
 }
 
 export const ParameterRWClient = (props : ParameterClientProps) => {
     // no need observer HOC as well
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
 
     // parameter input choice - raw value or JSON
     const [inputChoice, setInputChoice ] = useState(props.parameter.inputType) // JSON and RAW are allowed
@@ -139,7 +139,7 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
                 request = {
                     url : fullpath, 
                     method : props.parameter.scada_info.http_method[0] as any, 
-                    baseURL : props.clientState.domain,
+                    baseURL : clientState.domain,
                     // httpsAgent: new https.Agent({ rejectUnauthorized: false })
                 }
             else 
@@ -150,31 +150,31 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
                         timeout : timeout >= 0? timeout : null,
                         value : parseWithInterpretation(paramValue, props.parameter.type) 
                     },
-                    baseURL : props.clientState.domain,
+                    baseURL : clientState.domain,
                     // httpsAgent: new https.Agent({ rejectUnauthorized: false })
                 }
             const requestTime = getFormattedTimestamp()
             const requestTime_ = Date.now()
             const response = await asyncRequest(request) as AxiosResponse
             let executionTime = Date.now() - requestTime_
-            if(props.clientState.stringifyOutput) 
+            if(clientState.stringifyOutput) 
                 console.log(JSON.stringify(response.data, null, 2))
             else 
                 console.log(response.data)    
             console.log(`PARAMETER ${mode} : ${props.parameter.name}, REQUEST TIME : ${requestTime}, RESPONSE TIME : ${getFormattedTimestamp()}, EXECUTION TIME : ${executionTime.toString()}ms, RESPONSE BELOW :`)
             if(response.data && response.data.state) 
-                props.clientState.setRemoteObjectState(response.data.state[props.parameter.owner_instance_name])
-            props.clientState.setLastResponse(response)
+                clientState.setRemoteObjectState(response.data.state[props.parameter.owner_instance_name])
+            clientState.setLastResponse(response)
             if(response.data && response.data.exception) 
-                props.clientState.setError(response.data.exception.message, response.data.exception.traceback)
-            else if (props.clientState.hasError)
-                props.clientState.resetError()
+                clientState.setError(response.data.exception.message, response.data.exception.traceback)
+            else if (clientState.hasError)
+                clientState.resetError()
         } 
         catch(error : any){
             console.log(error)
-            props.clientState.setError(error.message, null)
+            clientState.setError(error.message, null)
         }
-    }, [props.clientState, props.parameter, fullpath, timeout, paramValue])
+    }, [clientState, props.parameter, fullpath, timeout, paramValue])
 
     const readParam = useCallback(async() => await RWParam('READ'), [RWParam])
     const writeParam = useCallback(async() => await RWParam('WRITE'), [RWParam])
@@ -386,13 +386,13 @@ export const ParameterDocViewer = ( props : ParameterClientProps) => {
                     { id   : "URL",
                       name : <DocRowTitle>URL</DocRowTitle>, 
                       info : <Link 
-                                onClick={() => window.open(props.clientState.domain + props.parameter.fullpath)} 
+                                onClick={() => window.open(clientState.domain + props.parameter.fullpath)} 
                                 sx={{ alignItems : "center", cursor:'pointer', fontSize : 14,
                                     color : "#0000EE"}}
                                 underline="hover"
                                 variant="caption"
                             >
-                                {props.clientState.domain + props.parameter.fullpath}
+                                {clientState.domain + props.parameter.fullpath}
                             </Link>
                     },
                     { id : "STATE" , name : <DocRowTitle>STATE</DocRowTitle>, info : props.parameter.state },
@@ -486,7 +486,7 @@ type MobXVisualizationProps = {
 
 export const MobXVisualization = (props : MobXVisualizationProps) => {
 
-    const [render, stateManager] = useMobXVisualization(props.parameter, props.clientState)
+    const [render, stateManager] = useMobXVisualization(props.parameter, clientState)
    
     return (
         <>
@@ -527,7 +527,7 @@ const useMobXVisualization = (parameter : ParameterInformation, clientState : Re
         let visualizationStateManager : StateManager | null = null
         if(parameter.visualization) {
             // visualizationStateManager = createHololinkedPortalStateManager(`${parameter.owner_instance_name}-${parameter.name}-visualization`)
-            // console.log("base url", props.clientState.baseURL)
+            // console.log("base url", clientState.baseURL)
             for(let key of Object.keys(parameter.visualization.actions)) {
                 if(!parameter.visualization.actions[key].URL.startsWith('http'))
                     parameter.visualization.actions[key].URL = clientState.baseURL + parameter.visualization.actions[key].URL

@@ -1,5 +1,5 @@
 // Internal & 3rd party functional libraries
-import {  useState, useEffect, useRef, useCallback } from "react";
+import {  useState, useEffect, useRef, useCallback, useContext } from "react";
 import { observer } from "mobx-react-lite";
 import { AxiosResponse } from "axios";
 // Custom functional libraries
@@ -19,6 +19,7 @@ import { RemoteObjectClientState } from "./state";
 import { ErrorViewer } from "../reuse-components";
 import NewWindow from "react-new-window";
 import { defaultAppSettings } from "../app-settings";
+import { ClientContext } from "./view";
 
 
 
@@ -30,7 +31,9 @@ export const allowedConsoleFontSizes = ["6", "8", "10", "12", "14", "16", "18", 
 export const allowedConsoleWindowSizes = ["100", "200", "300", "400", "500", "700", "1000", "2000", "5000", "10000"]
 export const allowedConsoleMaxEntries  = ["5", "10", "15", "20", "25", "50", "100", "200", "500", "show all"]
 
-export const UndockableConsole = observer(( { clientState }: UndockableConsoleProps) => {
+export const UndockableConsole = observer(() => {
+
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
 
     const [consoleOutputFontSize, setConsoleOutputFontSize] = useState<string>
                     (defaultAppSettings.console.defaultFontSize.toString())
@@ -538,7 +541,9 @@ export const LiveLogViewer = ({ clientState } : LiveLogViewerProps) => {
 }
 
 
-export const ResponseLogs = observer(( { clientState } : { clientState : RemoteObjectClientState }) => {
+export const ResponseLogs = observer(() => {
+
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
 
     const logs = clientState.lastResponse? clientState.lastResponse.data? 
                 clientState.lastResponse.data.logs? clientState.lastResponse.data.logs : null : null : null 
@@ -561,7 +566,9 @@ export const ResponseLogs = observer(( { clientState } : { clientState : RemoteO
 })
 
 
-export const ErrorBoundary = observer(( { clientState } : { clientState : RemoteObjectClientState }) => {
+export const ErrorBoundary = observer(() => {
+
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
 
     return (
         <Stack id='error-viewer-box-for-padding' sx={{ pt : 1 }}>

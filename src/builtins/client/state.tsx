@@ -6,7 +6,7 @@ import { asyncRequest } from '@hololinked/mobx-render-engine/utils/http';
 import { fetchFieldFromLocalStorage } from '@hololinked/mobx-render-engine/utils/misc';
 // Internal & 3rd party component libraries
 import { EventInfo, EventInformation, MethodInfo, MethodInformation, ParameterInfo, 
-    ParameterInformation, RemoteObjectInformation } from './thing-info';
+    PropertyInformation, RemoteObjectInformation } from './thing-info';
 // Custom component libraries 
 
 
@@ -42,7 +42,6 @@ export class RemoteObjectClientState {
     existingRO_URLs : any
     // console output features declared at this level to be used across different tabs
     stringifyOutput : boolean
-    showSettings : boolean 
     // error displays
     errorMessage :  string
     errorTraceback :  string[] | null 
@@ -59,7 +58,6 @@ export class RemoteObjectClientState {
         this.fetchSuccessful = true 
         this.remoteObjectState = ''
         this.stringifyOutput = false 
-        this.showSettings = false
         this.errorMessage = ''
         this.errorTraceback = null 
         this.hasError = false  
@@ -86,8 +84,8 @@ export class RemoteObjectClientState {
             editURLsList : action,
 
             stringifyOutput : observable,
-            showSettings : observable,
-            setShowSettings : action,
+
+          
             setStringifyOutput : action,
 
             errorMessage :  observable,
@@ -103,7 +101,6 @@ export class RemoteObjectClientState {
             removeEventSource : action
         })
     }
-
 
     setError (message = '', traceback = null) {
         this.errorMessage = message 
@@ -145,10 +142,6 @@ export class RemoteObjectClientState {
         this.fetchSuccessful = value
     }
 
-    setShowSettings(value : boolean) {
-        this.showSettings = value
-    }
-
     setStringifyOutput(value : boolean) {
         this.stringifyOutput = value
     }
@@ -185,7 +178,7 @@ export class RemoteObjectClientState {
                     documentation : null, GUI : null}) 
                 roinfo.instance_name = response.data.instance_name 
                 for(let key of Object.keys(response.data.properties)) 
-                    roinfo.parameters.push(new ParameterInformation(response.data.properties[key] as ParameterInfo))                    
+                    roinfo.parameters.push(new PropertyInformation(response.data.properties[key] as ParameterInfo))                    
                 for(let key of Object.keys(response.data.actions)) 
                     roinfo.methods.push(new MethodInformation(response.data.actions[key] as MethodInfo))                    
                 for(let key of Object.keys(response.data.events)) 
@@ -243,9 +236,9 @@ export class RemoteObjectClientState {
         localStorage.setItem('daqpy-webdashboard', JSON.stringify(existingData))
     }   
 
-    getObjects(name : string) : { [key : string] : any } {
+    getObjects(name : "Properties" | "Actions" | "Events") : { [key : string] : any } {
         switch(name) {
-            case 'Methods' : return this.remoteObjectInfo.sortedMethods 
+            case 'Actions' : return this.remoteObjectInfo.sortedMethods 
             case 'Events' : return this.remoteObjectInfo.sortedEvents
             default : return this.remoteObjectInfo.sortedParameters
         }

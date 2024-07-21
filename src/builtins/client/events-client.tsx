@@ -1,5 +1,5 @@
 // Internal & 3rd party functional libraries
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 // Custom functional libraries
 // Internal & 3rd party component libraries
@@ -7,26 +7,28 @@ import { Button, Stack, ButtonGroup, Link } from "@mui/material"
 // Custom component libraries 
 import { EventInformation } from './thing-info'
 import { RemoteObjectClientState } from "./state";
+import { ClientContext } from "./view";
 
 
 
 type EventSelectWindowProps =  { 
     event : EventInformation
-    clientState : RemoteObjectClientState    
 }
 
 export const SelectedEventWindow = observer((props : EventSelectWindowProps) => {
 
-    const [eventURL, setEventURL] = useState<string>(props.clientState.domain + props.event.fullpath)
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
+
+    const [eventURL, setEventURL] = useState<string>(clientState.domain + props.event.fullpath)
 
     useEffect(() => 
-        setEventURL(props.clientState.domain + props.event.fullpath)
+        setEventURL(clientState.domain + props.event.fullpath)
     , [props.event.fullpath])
    
     const streamEvent = () => {
         let source = new EventSource(eventURL)
         source.onmessage = (event : MessageEvent) => {
-            if(props.clientState.stringifyOutput)    
+            if(clientState.stringifyOutput)    
                 console.log(event.data)
             else 
                 console.log(JSON.parse(event.data))
@@ -37,15 +39,15 @@ export const SelectedEventWindow = observer((props : EventSelectWindowProps) => 
         source.onerror = (error) => {
             console.log(error)
         }
-        props.clientState.addEventSource(eventURL, source)
+        clientState.addEventSource(eventURL, source)
     }
 
     const stopEvent = () => {
-        let eventSrc = props.clientState.eventSources[eventURL]
+        let eventSrc = clientState.eventSources[eventURL]
         if(eventSrc) {
             eventSrc.close()
             console.log(`closing event source ${eventURL}`)
-            props.clientState.removeEventSource(eventURL)
+            clientState.removeEventSource(eventURL)
         }
     }
 
@@ -71,14 +73,14 @@ export const SelectedEventWindow = observer((props : EventSelectWindowProps) => 
                     <Button 
                         sx={{ flexGrow: 0.05, display : 'flex'}} 
                         onClick={streamEvent}
-                        disabled={props.clientState.eventSources[eventURL] ? true : false}
+                        disabled={clientState.eventSources[eventURL] ? true : false}
                     >
                         Stream
                     </Button>
                     <Button 
                         sx={{ flexGrow: 0.05, display : 'flex'}} 
                         onClick={stopEvent}
-                        disabled={props.clientState.eventSources[eventURL] ? false : true}
+                        disabled={clientState.eventSources[eventURL] ? false : true}
                     >
                         Stop
                     </Button>
