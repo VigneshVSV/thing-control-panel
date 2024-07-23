@@ -114,7 +114,7 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
         try {
             let data 
             let _fullpath 
-            if(props.method.scada_info.http_method[0].toLowerCase() === 'get') {
+            if(props.method.remote_info.http_method[0].toLowerCase() === 'get') {
                 data = null
                 _fullpath = fullpath + `?timeout=${timeout}`
                 if(fetchExecutionLogs)
@@ -132,7 +132,7 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
             const requestTime_ = Date.now()
             const response = await asyncRequest({
                 url : _fullpath, 
-                method : props.method.scada_info.http_method[0] as any, 
+                method : props.method.remote_info.http_method[0] as any, 
                 data : data, 
                 baseURL : clientState.domain,
                 // httpsAgent: new https.Agent({ rejectUnauthorized: false })
@@ -340,6 +340,8 @@ export const MethodInputChoice = (props : MethodInputChoiceProps) => {
 
 export const MethodDocViewer = (props : any) => {
 
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
+
     return (
         <Stack id="method-doc-viewer-table-layout" sx = {{ pl : 3, pr : 3, pt : 2, pb : 2, flexGrow : 1}}>
             <UnstyledTable
@@ -361,7 +363,7 @@ export const MethodDocViewer = (props : any) => {
                     },
                     { id : "STATE" , name : <DocRowTitle>STATE</DocRowTitle>, info : props.method.state},
                     { id : "HTTP METHOD" , name : <DocRowTitle>HTTP Method</DocRowTitle>, 
-                    info : props.method.scada_info.http_method },
+                    info : props.method.remote_info.http_method },
                     { id : "Keyword Defaults", name : <DocRowTitle>Keyword Defaults</DocRowTitle>, 
                     info : props.method.kwdefaults },
                     { id : "Defaults", name : <DocRowTitle>Defaults</DocRowTitle>, 

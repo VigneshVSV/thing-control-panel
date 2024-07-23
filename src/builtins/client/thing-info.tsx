@@ -8,14 +8,13 @@
 
 
 export type ScadaInfo = {
-    access_type : string
     URL_path : string
     http_method : string[] | string
     state : string[]
     obj_name : string
     iscoroutine : boolean 
-    isparameter : boolean
-    iscallable : boolean
+    isproperty : boolean
+    isaction : boolean
     http_request_as_argument : boolean 
 }
 
@@ -31,14 +30,14 @@ export type PropertyInfo = {
     observable : boolean,
     db_commit : boolean,
     db_init : boolean,
-    db_memorized : boolean,
+    db_persist : boolean,
     deepcopy_default : boolean,
     per_instance_descriptor : boolean,
     metadata : any,
-    parameter_type : string
+    type : string
     owner : string
     owner_instance_name : string
-    scada_info: ScadaInfo
+    remote_info: ScadaInfo
     instruction : string 
 }
 
@@ -52,7 +51,7 @@ export type ActionInfo = {
     signature : Array<string> 
     owner : string
     owner_instance_name : string
-    scada_info : ScadaInfo
+    remote_info : ScadaInfo
     instruction : string
 }
 
@@ -79,7 +78,7 @@ export type RemoteObjectInfo = {
 export class ResourceInformation {
 
     _doc : string
-    scada_info: ScadaInfo
+    remote_info: ScadaInfo
     name : string
     owner : string
     owner_instance_name : string
@@ -87,12 +86,12 @@ export class ResourceInformation {
     label : string
 
     constructor(data : any) {
-        this._doc = data.doc
-        this.scada_info = data.remote_info
+        this._doc = data.doc 
+        this.remote_info = data.remote_info
         this.name = data.name 
-        this.type = data.type
         this.owner = data.owner
         this.owner_instance_name = data.owner_instance_name
+        this.type = data.type
         this.label = data.label ? data.label : ''
     }
 
@@ -103,10 +102,10 @@ export class ResourceInformation {
     }
 
     get state() : string {
-        if(!this.scada_info.state) 
+        if(!this.remote_info.state) 
             return "any state"
         let state = ''
-        for (let st of this.scada_info.state)
+        for (let st of this.remote_info.state)
             state = state? state + ', ' + st : st 
         return state // .substring(state.length - 2)
     }
@@ -123,7 +122,7 @@ export class PropertyInformation extends ResourceInformation {
     observable : boolean
     db_commit : boolean
     db_init : boolean
-    db_memorized : boolean
+    db_persist : boolean
     deepcopy_default : boolean
     per_instance_descriptor : boolean
     default : any
@@ -133,33 +132,33 @@ export class PropertyInformation extends ResourceInformation {
 
     constructor(data : PropertyInfo) {
         super(data)
-        this.allow_None = data.allow_None
-        this.class_member = data.class_member
-        this.constant = data.constant
-        this.db_commit = data.db_commit
-        this.db_init = data.db_init
-        this.db_memorized = data.db_memorized
-        this.deepcopy_default = data.deepcopy_default
-        this.per_instance_descriptor = data.per_instance_descriptor
-        this.default = data.default
-        this.metadata = data.metadata
-        this.readonly = data.readonly
-        this.observable = data.observable
-        this.fullpath = data.instruction
+        this.allow_None = data.allow_None // allow_None : boolean
+        this.class_member = data.class_member // class_member : boolean
+        this.constant = data.constant // constant : boolean
+        this.db_commit = data.db_commit // db_commit : boolean
+        this.db_init = data.db_init // db_init : boolean
+        this.db_persist = data.db_persist //  db_persist : boolean
+        this.deepcopy_default = data.deepcopy_default // deepcopy_default : boolean
+        this.per_instance_descriptor = data.per_instance_descriptor // per_instance_descriptor : boolean
+        this.default = data.default // default : any
+        this.metadata = data.metadata //  metadata : any
+        this.readonly = data.readonly // readonly : boolean
+        this.observable = data.observable // observable : boolean
+        this.fullpath = data.instruction //  instruction : string 
     }
 
     // property's own attributes for which chips should be shown
     chipKeys : string[] = ['allow_None' , 'class_member', 'constant', 'db_commit', 
-    'db_init', 'db_memorized', 'deepcopy_default', 'per_instance_descriptor', 'readonly',
+    'db_init', 'db_persist', 'deepcopy_default', 'per_instance_descriptor', 'readonly',
     'observable']
 
-    chipKeysSensibleString = {
+    chipKeysSensibleString : { [key : string] : string } = {
         'allow_None' : "allows None" , 
         'class_member' : "class variable", 
         'constant' : 'constant', 
         'db_commit' : 'database committed at write',
         'db_init' : 'loaded from database at startup only', 
-        'db_memorized' : 'database committed at write & loaded at startup', 
+        'db_persist' : 'database committed at write & loaded at startup', 
         'deepcopy_default' : 'deep-copied default value', 
         'per_instance_descriptor' : 'per instance descriptor',
         'readonly' : 'read-only',
@@ -172,10 +171,9 @@ export class PropertyInformation extends ResourceInformation {
                     'MultiFileSelector', 'TypedKeyMappingsDict']
 
     get chips() : string[] {
-        let Chips = []
+        let Chips : string[] = []
         for(var key of Object.keys(this.chipKeysSensibleString)){
             if(this[key as keyof PropertyInformation])
-                // @ts-ignore
                 Chips.push(this.chipKeysSensibleString[key])
         }
         return Chips
@@ -206,11 +204,12 @@ export class ActionInformation extends ResourceInformation {
         super(data)
         // @ts-ignore
         this.name = data.obj_name
-        this.module = data.module 
-        this.qualname = data.qualname 
-        this.signature = data.signature
-        this.kwdefaults = data.kwdefaults
-        this.defaults = data.defaults
+        this.module = data.module // module : string
+        this.qualname = data.qualname // qualname : string
+        this.kwdefaults = data.kwdefaults // kwdefaults : any
+        this.defaults = data.defaults // defaults : any
+        this.signature = data.signature // signature : Array<string> 
+        // instruction : string
         // @ts-ignore
         this.fullpath = data.remote_info.fullpath
     }  
@@ -240,13 +239,11 @@ export class RemoteObjectInformation  {
     events : EventInformation[]
     classdoc : string[] | null 
     inheritance : string[]
-    documentation : any 
-    _GUI : null | { actions : { [key : string] : any}, UIComponents : { [key : string] : any}}
     _updatedGUIStateManager : boolean
     _sortedProperties : { [key : string] : PropertyInformation[] } | null
     _sortedMethods : { [key : string] : ActionInformation[] } | null 
     _sortedEvents : { [key : string] : EventInformation[] } | null 
-    _documentationProperties : PropertyInformation[] | null
+    
 
     constructor(info : RemoteObjectInfo) {
         this.instance_name = info.instance_name
@@ -255,13 +252,10 @@ export class RemoteObjectInformation  {
         this.events = info.events
         this.classdoc = info.classdoc 
         this.inheritance = info.inheritance
-        this.documentation = info.documentation
         this._updatedGUIStateManager = false
-        this._GUI = info.GUI
         this._sortedProperties = null 
         this._sortedEvents = null 
         this._sortedMethods = null 
-        this._documentationProperties = null
     }
 
     get classDoc(){

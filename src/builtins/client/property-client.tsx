@@ -138,14 +138,14 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
             if(mode === 'READ')
                 request = {
                     url : fullpath, 
-                    method : props.parameter.scada_info.http_method[0] as any, 
+                    method : props.parameter.remote_info.http_method[0] as any, 
                     baseURL : clientState.domain,
                     // httpsAgent: new https.Agent({ rejectUnauthorized: false })
                 }
             else 
                 request = {
                     url : fullpath, 
-                    method : props.parameter.scada_info.http_method[1] as any, 
+                    method : props.parameter.remote_info.http_method[1] as any, 
                     data : { 
                         timeout : timeout >= 0? timeout : null,
                         value : parseWithInterpretation(paramValue, props.parameter.type) 
@@ -364,6 +364,8 @@ function stringify(val, depth, replacer, space) {
 
 
 export const ParameterDocViewer = ( props : ParameterClientProps) => {
+    
+    const clientState = useContext(ClientContext) as RemoteObjectClientState
 
     return (
         <Stack id="parameter-doc-viewer-table-layout" sx = {{ pl : 3, pr : 3, pt : 2, pb : 2, flexGrow : 1}}>
@@ -397,9 +399,9 @@ export const ParameterDocViewer = ( props : ParameterClientProps) => {
                     },
                     { id : "STATE" , name : <DocRowTitle>STATE</DocRowTitle>, info : props.parameter.state },
                     { id : "WRITE_METHOD" , name : <DocRowTitle>Write Method</DocRowTitle>, 
-                      info : props.parameter.scada_info.http_method[1] },
+                      info : props.parameter.remote_info.http_method[1] },
                     { id : "READ_METHOD" , name : <DocRowTitle>Read Method</DocRowTitle>, 
-                      info : props.parameter.scada_info.http_method[0] },
+                      info : props.parameter.remote_info.http_method[0] },
                 ]}
                 tree={"parameter-doc-viewer-table-"+props.parameter.name}            
             />

@@ -2,10 +2,9 @@
 import { makeObservable, observable, action } from 'mobx';
 import axios, { AxiosResponse } from 'axios';
 // Custom functional libraries
-import { asyncRequest } from '@hololinked/mobx-render-engine/utils/http';
 import { fetchFieldFromLocalStorage } from '@hololinked/mobx-render-engine/utils/misc';
 // Internal & 3rd party component libraries
-import { EventInfo, EventInformation, MethodInfo, MethodInformation, ParameterInfo, 
+import { EventInfo, EventInformation, ActionInfo, ActionInformation, PropertyInfo, 
     PropertyInformation, RemoteObjectInformation } from './thing-info';
 // Custom component libraries 
 
@@ -14,13 +13,11 @@ import { EventInfo, EventInformation, MethodInfo, MethodInformation, ParameterIn
 
 export const emptyRemoteObjectInformation = new RemoteObjectInformation({
     instance_name : '',
-    parameters : [], 
+    properties : [], 
     methods : [], 
     events : [], 
     classdoc : null, 
-    inheritance : [], 
-    documentation : null, 
-    GUI : null
+    inheritance : []
 })
 
 const createDomain = (value : string) => {
@@ -173,14 +170,19 @@ export class RemoteObjectClientState {
             }) as AxiosResponse
             if (response.status === 200) {
                 this.updateURLprefixes(baseurl)
-                let roinfo : RemoteObjectInformation = new RemoteObjectInformation({instance_name : '', parameters : [], 
-                    methods : [], events : [], classdoc : null, inheritance : [], 
-                    documentation : null, GUI : null}) 
+                let roinfo : RemoteObjectInformation = new RemoteObjectInformation({
+                                                                            instance_name : '', 
+                                                                            properties : [], 
+                                                                            methods : [], 
+                                                                            events : [], 
+                                                                            classdoc : null, 
+                                                                            inheritance : []
+                                                                        }) 
                 roinfo.instance_name = response.data.instance_name 
                 for(let key of Object.keys(response.data.properties)) 
-                    roinfo.parameters.push(new PropertyInformation(response.data.properties[key] as ParameterInfo))                    
+                    roinfo.properties.push(new PropertyInformation(response.data.properties[key] as PropertyInfo))                    
                 for(let key of Object.keys(response.data.actions)) 
-                    roinfo.methods.push(new MethodInformation(response.data.actions[key] as MethodInfo))                    
+                    roinfo.methods.push(new ActionInformation(response.data.actions[key] as ActionInfo))                    
                 for(let key of Object.keys(response.data.events)) 
                     roinfo.events.push(new EventInformation(response.data.events[key] as EventInfo))
                 if(response.data.classdoc) 
@@ -240,7 +242,7 @@ export class RemoteObjectClientState {
         switch(name) {
             case 'Actions' : return this.remoteObjectInfo.sortedMethods 
             case 'Events' : return this.remoteObjectInfo.sortedEvents
-            default : return this.remoteObjectInfo.sortedParameters
+            default : return this.remoteObjectInfo.sortedProperties
         }
     }
 }
