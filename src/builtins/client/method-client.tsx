@@ -12,12 +12,11 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-crimson_editor"
 import "ace-builds/src-noconflict/ext-language_tools";
 // Custom component libraries 
-import { ActionInformation } from "./thing-info";
+import { ActionInformation, Thing } from "./state";
 import { TabPanel } from "../reuse-components";
 import UnstyledTable from "./doc-viewer";
 import { DocRowTitle } from "./property-client";
-import { RemoteObjectClientState } from "./state";
-import { ClientContext } from "./view";
+import { ThingManager } from "./view";
     
     
 
@@ -30,7 +29,7 @@ const methodFields = ['Execute', 'Doc']
 export const SelectedMethodWindow = ( props : SelectedMethodWindowProps) => {
 
     const [methodFieldsTab, setMethodFieldsTab] = useState(0);
-    const handleParameterFieldTabChange = useCallback((event: React.SyntheticEvent, newValue: number) => {
+    const handleParameterFieldTabChange = useCallback((_ : React.SyntheticEvent, newValue: number) => {
         setMethodFieldsTab(newValue);
     }, [])
     
@@ -92,7 +91,7 @@ type MethodExecutionProps = {
 
 export const MethodExecutionClient = (props : MethodExecutionProps) => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
     
     const [fetchExecutionLogs, setFetchExecutionLogs] = useState<boolean>(false)                                                                                               
     const [inputChoice, setInputChoice ] = useState('JSON')
@@ -340,7 +339,7 @@ export const MethodInputChoice = (props : MethodInputChoiceProps) => {
 
 export const MethodDocViewer = (props : any) => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
 
     return (
         <Stack id="method-doc-viewer-table-layout" sx = {{ pl : 3, pr : 3, pt : 2, pb : 2, flexGrow : 1}}>

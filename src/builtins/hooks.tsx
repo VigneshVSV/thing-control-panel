@@ -2,7 +2,6 @@
 import  { useState, useCallback, useEffect, MutableRefObject } from "react";
 // Custom functional libraries
 import { StateManager } from "@hololinked/mobx-render-engine/state-manager";
-import { fetchFieldFromLocalStorage } from "@hololinked/mobx-render-engine/utils/misc";
 import axios, { AxiosResponse } from "axios";
 // Internal & 3rd party component libraries
 // Custom component libraries 
@@ -86,6 +85,27 @@ export const useDashboard = (dashboardURL : string, dashboardStateManager : Muta
 
 
 
+export const fetchFieldFromLocalStorage = (field : string | null, defaultValue : any = null) => {
+    let obj = localStorage.getItem('thing-control-panel')
+    if(!obj)
+        return defaultValue 
+    if(typeof(obj) === 'string') 
+        obj = JSON.parse(obj as string)
+    if(field) {
+        // @ts-ignore
+        obj = obj[field]
+        if(!obj)    
+            return defaultValue
+        return obj 
+    }
+    else{
+        if(!obj)
+            return defaultValue
+        return obj   
+    }
+}
+
+
 export const useAutoCompleteOptionsFromLocalStorage = (field : string) => {
     const [existingData, setExistingData] = useState<{[key : string] : any}>({})
     if(!existingData[field])
@@ -128,7 +148,7 @@ export const useAutoCompleteOptionsFromLocalStorage = (field : string) => {
             }
         }
         setExistingData(existingData)
-        localStorage.setItem('daqpy-webdashboard', JSON.stringify(existingData))
+        localStorage.setItem('thing-control-panel', JSON.stringify(existingData))
     }, [existingData])
     return [existingData[field], modifyOptions]
 }   

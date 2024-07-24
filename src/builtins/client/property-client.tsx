@@ -5,7 +5,6 @@ import { AxiosRequestConfig, AxiosResponse } from "axios";
 // Custom functional libraries
 import { getFormattedTimestamp } from "@hololinked/mobx-render-engine/utils/misc";
 import { asyncRequest } from "@hololinked/mobx-render-engine/utils/http";
-import { createHololinkedPortalStateManager } from "../app-state";
 import { StateManager, Action, BaseAction } from "@hololinked/mobx-render-engine/state-manager";
 // Internal & 3rd party component libraries
 import { Stack, Typography, Tabs, Tab, FormControl, FormControlLabel, Button, ButtonGroup, 
@@ -20,10 +19,9 @@ import "ace-builds/src-noconflict/theme-crimson_editor"
 import "ace-builds/src-noconflict/ext-language_tools";
 // Custom component libraries 
 import { TabPanel } from "../reuse-components";
-import { PropertyInformation, PlotlyInfo } from "./thing-info";
-import { RemoteObjectClientState } from "./state";
+import { PropertyInformation } from "./state";
 import UnstyledTable from "./doc-viewer";
-import { ClientContext } from "./view";
+import { ThingManager } from "./view";
 
 
 
@@ -36,7 +34,7 @@ const propertyFields = ['Execute', 'Doc']
 export const SelectedPropertyWindow = (props : SelectedPropertyWindowProps) => {
     // No need to use observer HOC as either property prop changes or child components of this component 
     // read and manipulate client state 
-    // const clientState = useContext(ClientContext) as RemoteObjectClientState
+    // const clientState = useContext(ThingManager) as Thing
     
     // current tab of property fields
     const [propertyFieldsTab, setPropertyFieldsTab] = useState(0);
@@ -112,7 +110,7 @@ type PropertyClientProps = {
 
 export const PropertyRWClient = (props : PropertyClientProps) => {
     // no need observer HOC as well
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
 
     // property input choice - raw value or JSON
     const [inputChoice, setInputChoice ] = useState(props.property.inputType) // JSON and RAW are allowed
@@ -365,7 +363,7 @@ function stringify(val, depth, replacer, space) {
 
 export const PropertyDocViewer = ( props : PropertyClientProps) => {
     
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
 
     return (
         <Stack id="property-doc-viewer-table-layout" sx = {{ pl : 3, pr : 3, pt : 2, pb : 2, flexGrow : 1}}>
@@ -421,7 +419,7 @@ export const DocRowTitle = (props : any) => {
 
 type VisualizationProps = {
     property : PropertyInformation
-    clientState : RemoteObjectClientState
+    clientState : Thing
 }
 
 const VisualuationDummyAppContainer = {
@@ -481,7 +479,7 @@ export const Visualization = (props : VisualizationProps) => {
 
 type MobXVisualizationProps = {
     property : PropertyInformation
-    clientState : RemoteObjectClientState
+    clientState : Thing
     docked : boolean
     setDocked : any
 }
@@ -519,7 +517,7 @@ export const MobXVisualization = (props : MobXVisualizationProps) => {
 
 
 
-const useMobXVisualization = (property : PropertyInformation, clientState : RemoteObjectClientState) => {
+const useMobXVisualization = (property : PropertyInformation, clientState : Thing) => {
 
     const [render, setRender] = useState<boolean>(false)
     const [stateManager, setStateManager] = useState<StateManager | null>(null)

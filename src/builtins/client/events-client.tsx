@@ -5,9 +5,9 @@ import { observer } from "mobx-react-lite";
 // Internal & 3rd party component libraries
 import { Button, Stack, ButtonGroup, Link } from "@mui/material"
 // Custom component libraries 
-import { EventInformation } from './thing-info'
-import { RemoteObjectClientState } from "./state";
-import { ClientContext } from "./view";
+import { EventInformation } from './state'
+import { Thing } from "./state";
+import { ThingManager } from "./view";
 
 
 
@@ -17,7 +17,7 @@ type EventSelectWindowProps =  {
 
 export const SelectedEventWindow = observer((props : EventSelectWindowProps) => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
 
     const [eventURL, setEventURL] = useState<string>(clientState.domain + props.event.fullpath)
 

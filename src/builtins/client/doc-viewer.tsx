@@ -14,9 +14,9 @@ import { Button, Stack, Typography,  TextField, ButtonGroup,
 import OpenInNewTwoToneIcon from '@mui/icons-material/OpenInNewTwoTone';
 import DownloadTwoToneIcon from '@mui/icons-material/DownloadTwoTone'
 // Custom component libraries 
-import { PropertyInformation } from './thing-info';
-import { RemoteObjectClientState } from './state';
-import { ClientContext } from './view';
+import { PropertyInformation } from './state';
+import { Thing } from './state';
+import { ThingManager } from './view';
 
 
 
@@ -166,7 +166,7 @@ type fileSourceType = {
 
 export const ClassDocWindow = observer(() => {
 
-    const clientState = React.useContext(ClientContext) as RemoteObjectClientState
+    const clientState = React.useContext(ThingManager) as Thing
     const classDoc = clientState.remoteObjectInfo.classDoc
 
     return (
@@ -191,7 +191,7 @@ export const ClassDocWindow = observer(() => {
 
 const PostmanFetcher = () => {
 
-    const clientState = React.useContext(ClientContext) as RemoteObjectClientState
+    const clientState = React.useContext(ThingManager) as Thing
     const [postmanDomainPrefix, setDomainPrefix] = useState(clientState.domain)
 
     const getPostmanCollection = useCallback(async() => {
@@ -304,7 +304,7 @@ const PostmanFetcher = () => {
 
 const FileServer = () => {
 
-    const clientState = React.useContext(ClientContext) as RemoteObjectClientState
+    const clientState = React.useContext(ThingManager) as Thing
     const documentationParameters = clientState.remoteObjectInfo.documentationParameters 
     const [fileSource, setFileSource] = useState<fileSourceType | null>(null)
 

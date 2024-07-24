@@ -15,16 +15,16 @@ import { Console, Hook, Unhook } from 'console-feed-optimized'
 import { downloadJSON, openJSONinNewTab } from "@hololinked/mobx-render-engine/utils/misc";
 import { LogTable, LogDataType, useRemoteObjectLogColumns } from "../log-viewer/log-viewer";
 import { asyncRequest } from "@hololinked/mobx-render-engine/utils/http";
-import { RemoteObjectClientState } from "./state";
 import { ErrorViewer } from "../reuse-components";
 import NewWindow from "react-new-window";
 import { defaultAppSettings } from "../app-settings";
-import { ClientContext } from "./view";
+import { ThingManager } from "./view";
+import { Thing } from "./state";
 
 
 
 type UndockableConsoleProps = { 
-    clientState : RemoteObjectClientState
+    clientState : Thing
 }
 
 export const allowedConsoleFontSizes = ["6", "8", "10", "12", "14", "16", "18", "20", "22", "24", "26", "28", "30"]
@@ -33,7 +33,7 @@ export const allowedConsoleMaxEntries  = ["5", "10", "15", "20", "25", "50", "10
 
 export const UndockableConsole = observer(() => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
 
     const [consoleOutputFontSize, setConsoleOutputFontSize] = useState<string>
                     (defaultAppSettings.console.defaultFontSize.toString())
@@ -292,13 +292,11 @@ export const ConsoleOutput = ( { consoleWindowSize, consoleEntries, consoleOutpu
 
 
 
-type LiveLogViewerProps = {
-    clientState : RemoteObjectClientState
-}
-
 export const allowedLogIntervals=['1', '2', '3', '5', '7', '10', '15', '20', '30', '60', '120', '300']
 
-export const LiveLogViewer = ({ clientState } : LiveLogViewerProps) => {
+export const LiveLogViewer = () => {
+
+    const clientState = useContext(ThingManager) as Thing
 
     const [eventSrc, setEventSrc] = useState<EventSource | null>(null)
     const [docked, setDocked] = useState<boolean>(true)
@@ -543,7 +541,7 @@ export const LiveLogViewer = ({ clientState } : LiveLogViewerProps) => {
 
 export const ResponseLogs = observer(() => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
 
     const logs = clientState.lastResponse? clientState.lastResponse.data? 
                 clientState.lastResponse.data.logs? clientState.lastResponse.data.logs : null : null : null 
@@ -568,7 +566,7 @@ export const ResponseLogs = observer(() => {
 
 export const ErrorBoundary = observer(() => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const clientState = useContext(ThingManager) as Thing
 
     return (
         <Stack id='error-viewer-box-for-padding' sx={{ pt : 1 }}>
@@ -584,3 +582,42 @@ export const ErrorBoundary = observer(() => {
         </Stack>     
     )
 })
+
+
+
+// export const StatusBar = observer(( { thing } : { thing : Thing }) => {
+
+//     const remoteObjectState = thing.remoteObjectState
+//     const remoteObjectInfo = thing.remoteObjectInfo
+
+//     return (
+//         <>
+//             {remoteObjectInfo.instance_name?
+//                 <Stack sx={{ flexGrow: 1, display : 'flex' }} direction='row'>
+//                     <ButtonGroup
+//                         disableElevation
+//                         variant='contained'
+//                         color='secondary'
+//                         size="small"
+//                     >
+//                         <Button>
+//                             Restart
+//                         </Button>
+//                         <Button>
+//                             Kill
+//                         </Button>
+//                         <Button>
+//                             Start
+//                         </Button>
+//                     </ButtonGroup>
+//                     {remoteObjectState?
+//                         <Box sx ={{ pt : 0.5, pl : 2}}>
+//                             <Typography variant="button">
+//                                 { "State : " + remoteObjectState}
+//                             </Typography>
+//                         </Box> : null }
+//                 </Stack>
+//             : null}
+//         </>
+//     )
+// })
