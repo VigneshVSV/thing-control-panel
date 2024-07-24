@@ -8,7 +8,7 @@ import "@fontsource/roboto/700.css";
 import { Box, ThemeProvider } from "@mui/material";
 // Custom component libraries
 import { theme } from "./overall-theme";
-import { Client } from './builtins/client/view';
+import { ThingClient } from './builtins/client/view';
 
 
 
@@ -17,7 +17,7 @@ const App = () => {
     return (
         <Box id='main-layout' sx={{ display : 'flex', flexGrow : 1, alignItems : 'center'}}>
             <ThemeProvider theme={theme}>      
-                <Client />
+                <ThingClient />
             </ThemeProvider>
         </Box>
     )

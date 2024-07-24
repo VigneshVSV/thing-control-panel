@@ -31,3 +31,9 @@ export function stringToObject(path : string, value : any, obj : any) {
     updateObjectFromString(path, value, obj)
     return originalObject
 }
+
+export function getAuthority(value : string) : string {
+    let protocol = value.split('//')[0]
+    let domain = value.split('/')[2]
+    return protocol+'//'+domain
+}

@@ -17,7 +17,7 @@ import CallReceivedTwoToneIcon from '@mui/icons-material/CallReceivedTwoTone';
 import CopyAllTwoToneIcon from '@mui/icons-material/CopyAllTwoTone';
 import NewWindow from "react-new-window";
 // Custom component libraries
-import { EventInformation, MethodInformation, PropertyInformation,
+import { EventInformation, ActionInformation, PropertyInformation,
     ResourceInformation} from './thing-info'
 import { ErrorBackdrop, TabPanel } from "../reuse-components";
 import { defaultAppSettings } from "../app-settings";
@@ -26,7 +26,9 @@ import { SelectedMethodWindow } from "./method-client";
 import { SelectedEventWindow } from "./events-client";
 import { ErrorBoundary, LiveLogViewer, ResponseLogs, UndockableConsole } from "./output-components";
 import { ClassDocWindow } from "./doc-viewer";
-import { RemoteObjectClientState } from "./state";
+import { ThingClientWorkerState } from "./state";
+import { fetchFieldFromLocalStorage } from "@hololinked/mobx-render-engine/utils/misc";
+import { useAutoCompleteOptionsFromLocalStorage } from "../hooks";
 
 
 
@@ -49,9 +51,11 @@ export const ThingViewer = observer(() => {
 
 export const Locator = observer(() => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const [existingURLs, modifyOptions] = useAutoCompleteOptionsFromLocalStorage('thing-url-text-input')
+    const [currentURL, setCurrentURL] = useState<string>('')
+    const workerState = useContext(WorkerContext) as ThingClientWorkerState
     const { showSettings, setShowSettings } = useContext(PageContext) as PageProps
-
+    
     return (
         <Stack id="thing-locator-layout" direction="row" sx={{ flexGrow : 1, display : 'flex' }}>
             <Box sx={{ display : 'flex', pb : 3 }}>
@@ -64,12 +68,17 @@ export const Locator = observer(() => {
                     </IconButton>
                 }
             </Box>
-            <LocatorAutocomplete />
+            <LocatorAutocomplete 
+                existingURLs={existingURLs}
+                currentURL={currentURL}
+                setCurrentURL={setCurrentURL}
+                editURLsList={modifyOptions}
+            />
             <Box id="thing-loader-buttons-box" sx={{ flexGrow: 0.01, display : 'flex', pb : 3}} >
                 <Button
                     id="load-thing-using-url-locator"
                     size="small"
-                    onClick={async() => await clientState.fetchRemoteObjectInfo()}
+                    onClick={async() => await workerState.fetchThingInfo()}
                     sx={{ borderRadius : 0 }}
                 >
                     Load
@@ -78,13 +87,13 @@ export const Locator = observer(() => {
                 <IconButton
                     id='save-thing-url'
                     sx={{ borderRadius : 0 }}
-                    onClick={() => clientState.editURLsList(clientState.baseURL, 'ADD')}
+                    onClick={() => modifyOptions(currentURL, 'ADD')}
                 >
                     <SaveTwoToneIcon />
                 </IconButton>
                 <IconButton
                     id="open-resource-json-in-new-tab"
-                    onClick={() => window.open(clientState.baseURL + '/resources/portal-app')}
+                    onClick={() => window.open(currentURL + '/resources/portal-app')}
                     sx = {{ borderRadius : 0 }}
                 >
                     <OpenInNewTwoToneIcon />
@@ -93,7 +102,7 @@ export const Locator = observer(() => {
                 <Button
                     id="clear-thing-view"
                     size="small"
-                    onClick={() => clientState.clearRemoteObjectInfo()}
+                    onClick={() => workerState.clearRemoteObjectInfo()}
                     sx = {{ borderRadius : 0 }}
                 >
                     Clear
@@ -103,19 +112,31 @@ export const Locator = observer(() => {
     )
 })
 
-// { clientState.remoteObjectInfo.instance_name?
+// { workerState.remoteObjectInfo.instance_name?
 //     <Box sx={{ flexGrow: 1, display : 'flex', maxWidth : "25%", pb : 4, pt : 1 }}>
-//         <StatusBar clientState={clientState} />
+//         <StatusBar workerState={workerState} />
 //     </Box> : null
 // }
 
-const LocatorAutocomplete = observer(() => {
+type LocatorAutocompleteProps = {
+    existingURLs : string[]
+    currentURL : string
+    setCurrentURL : React.Dispatch<React.SetStateAction<string>>
+    editURLsList : (inputURL : string, operation : 'ADD' | 'REMOVE') => void
+}
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+const LocatorAutocomplete = observer(({ 
+    existingURLs, 
+    currentURL, 
+    setCurrentURL, 
+    editURLsList 
+} : LocatorAutocompleteProps) => {
+
+    const workerState = useContext(WorkerContext) as ThingClientWorkerState
 
     // show delete button at given option
     const [autocompleteShowDeleteIcon, setAutocompleteShowDeleteIcon] = useState<string>('')
-    const fetchSuccessful = clientState.fetchSuccessful
+    // const fetchSuccessful = workerState.fetchSuccessful
 
     return (
         <Autocomplete
@@ -124,20 +145,20 @@ const LocatorAutocomplete = observer(() => {
             disablePortal
             autoComplete
             size="small"
-            onChange={(_, name) => {clientState.updateURLprefixes(name as string)}}
-            value={clientState.baseURL}
-            options={clientState.existingRO_URLs}
+            onChange={(_, name) => {setCurrentURL(name as string)}}
+            value={currentURL}
+            options={existingURLs}
             sx={{ flexGrow : 1, display: 'flex'}}
             renderInput={(params) =>
                 <TextField
                     label="URL"
                     variant="filled"
-                    error={!fetchSuccessful}
+                    // error={!fetchSuccessful}
                     sx={{ flexGrow: 0.99, display : 'flex', borderRadius : 0 }}
-                    onChange={(event) => clientState.updateURLprefixes(event.target.value)}
+                    onChange={(event) => setCurrentURL(event.target.value)}
                     onKeyDown={async (event) => {
                         if (event.key === 'Enter') {
-                            await clientState.fetchRemoteObjectInfo()
+                            await workerState.fetchThingInfo()
                         }
                     }}
                     {...params}
@@ -157,7 +178,7 @@ const LocatorAutocomplete = observer(() => {
                         {option}
                     </Typography>
                     {option === autocompleteShowDeleteIcon?
-                    <IconButton size="small" onClick={() => clientState.editURLsList(option, 'REMOVE')}>
+                    <IconButton size="small" onClick={() => editURLsList(option, 'REMOVE')}>
                         <DeleteForeverIcon fontSize="small" />
                     </IconButton> : null }
                 </li>)}
@@ -167,10 +188,10 @@ const LocatorAutocomplete = observer(() => {
 
 
 
-export const StatusBar = observer(( { clientState } : { clientState : RemoteObjectClientState }) => {
+export const StatusBar = observer(( { workerState } : { workerState : ThingClientWorkerState }) => {
 
-    const remoteObjectState = clientState.remoteObjectState
-    const remoteObjectInfo = clientState.remoteObjectInfo
+    const remoteObjectState = workerState.remoteObjectState
+    const remoteObjectInfo = workerState.remoteObjectInfo
 
     return (
         <>
@@ -210,7 +231,7 @@ const thingFields = ['Properties', 'Actions', 'Events', 'Doc']
 
 const UndockableInteractionWindow = observer(() => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const workerState = useContext(WorkerContext) as ThingClientWorkerState
     const [currentTab, setCurrentTab] = useState<number>(0)
     const [undock, setUndock] = useState<number>(-1)
     const [duplicates, setDuplicates] = useState<number[]>([])
@@ -283,13 +304,13 @@ const UndockableInteractionWindow = observer(() => {
                             id={"thing-fields-tab-" + name}
                             label={name}
                             sx={{ maxWidth : 150 }}
-                            disabled={!clientState.remoteObjectInfo.instance_name}
+                            disabled={!workerState.remoteObjectInfo.instance_name}
                         />
                     )}
                 </Tabs>
                 <Box
                     sx={{
-                        resize : 'vertical', height : clientState.remoteObjectInfo.instance_name? 400 : null,
+                        resize : 'vertical', height : workerState.remoteObjectInfo.instance_name? 400 : null,
                         overflow : 'auto', flexGrow : 1, border : 1, borderColor : 'divider'
                     }}
                 >
@@ -297,14 +318,14 @@ const UndockableInteractionWindow = observer(() => {
                         if(index === undock)
                             return(
                                 <NewWindow
-                                    name={`${thingFields[undockedTab.current]} - ${clientState.remoteObjectInfo.instance_name}`}
-                                    title={`${thingFields[undockedTab.current]} - ${clientState.remoteObjectInfo.instance_name}`}
+                                    name={`${thingFields[undockedTab.current]} - ${workerState.remoteObjectInfo.instance_name}`}
+                                    title={`${thingFields[undockedTab.current]} - ${workerState.remoteObjectInfo.instance_name}`}
                                     copyStyles={true}
                                 >
                                     <Box id='functionalities-box-new-window' sx={{ p : 5 }}>
                                         <Divider id='functionalities-title'>
                                             <Typography variant="button">
-                                                {thingFields[undockedTab.current]} - {clientState.remoteObjectInfo.instance_name}
+                                                {thingFields[undockedTab.current]} - {workerState.remoteObjectInfo.instance_name}
                                             </Typography>
                                         </Divider>
                                         <Functionalities name={thingFields[undockedTab.current]} />
@@ -327,15 +348,15 @@ const UndockableInteractionWindow = observer(() => {
                 </Box>
                 {duplicates.map((tabNum : number, index : number) =>
                     <NewWindow
-                        name={`${thingFields[tabNum]} - ${clientState.remoteObjectInfo.instance_name} - no. ${index}`}
-                        title={`${thingFields[tabNum]} - ${clientState.remoteObjectInfo.instance_name} - no. ${index}`}
+                        name={`${thingFields[tabNum]} - ${workerState.remoteObjectInfo.instance_name} - no. ${index}`}
+                        title={`${thingFields[tabNum]} - ${workerState.remoteObjectInfo.instance_name} - no. ${index}`}
                         copyStyles={true}
                         onUnload={() => removeDuplicateWindow(index)}
                     >
                         <Box id='functionalities-box-new-window-copied' sx={{ p : 5 }}>
                             <Divider>
                                 <Typography variant="button">
-                                    {thingFields[tabNum]} - {clientState.remoteObjectInfo.instance_name}
+                                    {thingFields[tabNum]} - {workerState.remoteObjectInfo.instance_name}
                                 </Typography>
                             </Divider>
                             <Functionalities name={thingFields[tabNum]} />
@@ -351,17 +372,17 @@ const UndockableInteractionWindow = observer(() => {
 
 const Functionalities = observer(({ name } : { name : string }) => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const workerState = useContext(WorkerContext) as ThingClientWorkerState
 
     switch(name) {
 
         case 'Doc' : return <ClassDocWindow />
 
-        // case 'Default GUI'   : return  <GUIViewer hasGUI={clientState.remoteObjectInfo.hasGUI}></GUIViewer>
+        // case 'Default GUI'   : return  <GUIViewer hasGUI={workerState.remoteObjectInfo.hasGUI}></GUIViewer>
 
         case 'Database' : return <Typography sx={{p : 2}}>No DB client</Typography>
 
-        case 'Log Viewer' : return <LiveLogViewer clientState={clientState} />
+        case 'Log Viewer' : return <LiveLogViewer workerState={workerState} />
 
         default : return <InteractionAffordanceWindow name={name as "Properties" | "Actions" | "Events"} />
                    
@@ -372,10 +393,10 @@ const Functionalities = observer(({ name } : { name : string }) => {
 
 export const InteractionAffordanceWindow = observer(({ name } : { name : "Properties" | "Actions" | "Events" }) => {
 
-    const clientState = useContext(ClientContext) as RemoteObjectClientState
+    const workerState = useContext(WorkerContext) as ThingClientWorkerState
 
     // interaction affordance object selection number
-    const objects = clientState.getObjects(name)
+    const objects = workerState.getObjects(name)
     const [selectedIndex, setSelectedIndex] = useState<Array<string|number>>(['RemoteObject', 0]);
     const handleListItemClick = useCallback((
             _ : React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -470,7 +491,7 @@ export const ClientSelect = ({ object, name } : ClientSelectProps) => {
     
     switch(name) {
         case 'Events' : return <SelectedEventWindow event={object as EventInformation} />                
-        case 'Actions' : return <SelectedMethodWindow method={object as MethodInformation} />                
+        case 'Actions' : return <SelectedMethodWindow method={object as ActionInformation} />                
         default : return <SelectedPropertyWindow property={object as PropertyInformation} />
     }
 }
@@ -482,26 +503,26 @@ type PageProps = {
     setShowSettings : React.Dispatch<React.SetStateAction<boolean>> | Function
 }
 
-export const ClientContext = createContext<RemoteObjectClientState | null>(null)
+export const WorkerContext = createContext<ThingClientWorkerState | null>(null)
 export const PageContext = createContext<any>({
     showSettings : false,
     setShowSettings : () => {}
 })
 
-export const Client = () => {
+export const ThingClient = () => {
 
     const [showSettings, setShowSettings] = useState<boolean>(false)
-    const clientState = useRef<RemoteObjectClientState>(new RemoteObjectClientState())
+    const workerState = useRef<ThingClientWorkerState>(new ThingClientWorkerState())
     const [pageState, _] = useState({ showSettings, setShowSettings })
 
-    /*
-    1. There is a client state which controls the state of the view itself with MobX. The values contained within
-    this state are always related to application data, never purely component rendering data.
+    /* 
+    Thing Client composes Thing Viewer, Location and Settings components which controls the settings of the client
+
+    1. There is a client worker state which controls the state of the interactions with the thing with MobX. 
+    The values contained within this state are always related to application data, never purely component rendering data.
     The purely component rendering data is left to react own's state management.
 
     2. purely component rendering data may be also part of contexts
-
-    3. The Thing is loaded into a class
     */
 
     return (
@@ -510,7 +531,7 @@ export const Client = () => {
             sx={{pt : 3, display : 'flex', flexGrow : 1, pb : 5}}
         >
             <PageContext.Provider value={pageState}>
-                <ClientContext.Provider value={clientState.current}>
+                <WorkerContext.Provider value={workerState.current}>
                 {!showSettings ?
                     <Stack id="thing-viewer-page-layout" sx={{ flexGrow: 1, display: 'flex'}}>
                         <Locator />
@@ -522,7 +543,7 @@ export const Client = () => {
                         goBack={() => setShowSettings(false)}
                     />
                 }
-                </ClientContext.Provider>
+                </WorkerContext.Provider>
             </PageContext.Provider>
         </Box>
     )

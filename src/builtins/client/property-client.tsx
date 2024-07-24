@@ -28,39 +28,39 @@ import { ClientContext } from "./view";
 
 
 type SelectedPropertyWindowProps = {
-    parameter : PropertyInformation
+    property : PropertyInformation
 }
 
-const parameterFields = ['Execute', 'Doc']
+const propertyFields = ['Execute', 'Doc']
 
 export const SelectedPropertyWindow = (props : SelectedPropertyWindowProps) => {
-    // No need to use observer HOC as either parameter prop changes or child components of this component 
+    // No need to use observer HOC as either property prop changes or child components of this component 
     // read and manipulate client state 
     // const clientState = useContext(ClientContext) as RemoteObjectClientState
     
-    // current tab of parameter fields
-    const [parameterFieldsTab, setParameterFieldsTab] = useState(0);
+    // current tab of property fields
+    const [propertyFieldsTab, setPropertyFieldsTab] = useState(0);
 
-    const handleParameterFieldTabChange = useCallback(
+    const handlePropertyFieldTabChange = useCallback(
         (_ : React.SyntheticEvent, newValue: number) => {
-            setParameterFieldsTab(newValue);
+            setPropertyFieldsTab(newValue);
     }, [])
 
     return (
-        <Stack id="selected-parameter-layout" sx={{ flexGrow : 1 }} >
+        <Stack id="selected-property-layout" sx={{ flexGrow : 1 }} >
             <Tabs
-                id="selected-parameter-fields-tab"
+                id="selected-property-fields-tab"
                 variant="scrollable"
-                value={parameterFieldsTab}
-                onChange={handleParameterFieldTabChange}
+                value={propertyFieldsTab}
+                onChange={handlePropertyFieldTabChange}
                 sx={{ borderBottom: 2, borderColor: 'divider', flexGrow : 1, display : 'flex' }}
             >
-                {parameterFields.map((name : string) => {
-                    if(name === 'Visualization' && props.parameter.visualization === null) 
-                        return <div key={"selected-parameter-fields-tabpanel-"+name}></div> 
+                {propertyFields.map((name : string) => {
+                    if(name === 'Visualization' && props.property.visualization === null) 
+                        return <div key={"selected-property-fields-tabpanel-"+name}></div> 
                     return (
                         <Tab 
-                            key={"selected-parameter-fields-tab-"+name}    
+                            key={"selected-property-fields-tab-"+name}    
                             id={name} 
                             label={name} 
                             sx={{ maxWidth : 150 }} 
@@ -68,17 +68,17 @@ export const SelectedPropertyWindow = (props : SelectedPropertyWindowProps) => {
                         )}
                 )}
             </Tabs>
-            {parameterFields.map((name : string, index : number) => {
-                if(name === 'Visualization' && props.parameter.visualization === null) 
-                    return <div key={"selected-parameter-fields-tabpanel-"+name}></div> 
+            {propertyFields.map((name : string, index : number) => {
+                if(name === 'Visualization' && props.property.visualization === null) 
+                    return <div key={"selected-property-fields-tabpanel-"+name}></div> 
                 return (
                     <TabPanel 
-                        key={"selected-parameter-fields-tabpanel-"+name}
-                        tree="selected-parameter-fields-tab"
-                        value={parameterFieldsTab} 
+                        key={"selected-property-fields-tabpanel-"+name}
+                        tree="selected-property-fields-tab"
+                        value={propertyFieldsTab} 
                         index={index} 
                     >
-                        <ParameterTabComponents name={name} {...props}/>
+                        <PropertyTabComponents name={name} {...props}/>
                     </TabPanel>
                 )} 
                 
@@ -89,34 +89,34 @@ export const SelectedPropertyWindow = (props : SelectedPropertyWindowProps) => {
 
 
 
-type ParameterTabComponentsProps = { 
+type PropertyTabComponentsProps = { 
     name : string
-    parameter : ParameterInformation
+    property : PropertyInformation
 }
 
-export const ParameterTabComponents = (props : ParameterTabComponentsProps) => {
+export const PropertyTabComponents = (props : PropertyTabComponentsProps) => {
     switch(props.name) {
-        case "Execute"  : return <ParameterRWClient  {...props}></ParameterRWClient>
-        case "Doc"      : return <ParameterDocViewer {...props}></ParameterDocViewer> 
+        case "Execute"  : return <PropertyRWClient  {...props}></PropertyRWClient>
+        case "Doc"      : return <PropertyDocViewer {...props}></PropertyDocViewer> 
         case "Database" : return <Typography>Current Database values will be shown here</Typography>
         case "Visualization" : return <Visualization {...props}></Visualization>
-        default : return <ParameterDocViewer {...props} ></ParameterDocViewer>
+        default : return <PropertyDocViewer {...props} ></PropertyDocViewer>
     }
 }
 
 
 
-type ParameterClientProps = {
-    parameter : ParameterInformation
+type PropertyClientProps = {
+    property : PropertyInformation
 }
 
-export const ParameterRWClient = (props : ParameterClientProps) => {
+export const PropertyRWClient = (props : PropertyClientProps) => {
     // no need observer HOC as well
     const clientState = useContext(ClientContext) as RemoteObjectClientState
 
-    // parameter input choice - raw value or JSON
-    const [inputChoice, setInputChoice ] = useState(props.parameter.inputType) // JSON and RAW are allowed
-    const [fullpath, setFullpath] = useState<string>(props.parameter.fullpath)
+    // property input choice - raw value or JSON
+    const [inputChoice, setInputChoice ] = useState(props.property.inputType) // JSON and RAW are allowed
+    const [fullpath, setFullpath] = useState<string>(props.property.fullpath)
     const [timeout, setTimeout] = useState<number>(-1)
     const [timeoutValid, setTimeoutValid] = useState<boolean>(true)
     // the value entered
@@ -124,9 +124,9 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
     // the latest response to be available as download
    
     useEffect(() => {
-        setInputChoice(props.parameter.inputType)
-        setFullpath(props.parameter.fullpath)
-    }, [props.parameter])
+        setInputChoice(props.property.inputType)
+        setFullpath(props.property.fullpath)
+    }, [props.property])
     
     const handleInputSelection = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         setInputChoice(event.target.value)
@@ -138,17 +138,17 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
             if(mode === 'READ')
                 request = {
                     url : fullpath, 
-                    method : props.parameter.remote_info.http_method[0] as any, 
+                    method : props.property.remote_info.http_method[0] as any, 
                     baseURL : clientState.domain,
                     // httpsAgent: new https.Agent({ rejectUnauthorized: false })
                 }
             else 
                 request = {
                     url : fullpath, 
-                    method : props.parameter.remote_info.http_method[1] as any, 
+                    method : props.property.remote_info.http_method[1] as any, 
                     data : { 
                         timeout : timeout >= 0? timeout : null,
-                        value : parseWithInterpretation(paramValue, props.parameter.type) 
+                        value : parseWithInterpretation(paramValue, props.property.type) 
                     },
                     baseURL : clientState.domain,
                     // httpsAgent: new https.Agent({ rejectUnauthorized: false })
@@ -161,9 +161,9 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
                 console.log(JSON.stringify(response.data, null, 2))
             else 
                 console.log(response.data)    
-            console.log(`PARAMETER ${mode} : ${props.parameter.name}, REQUEST TIME : ${requestTime}, RESPONSE TIME : ${getFormattedTimestamp()}, EXECUTION TIME : ${executionTime.toString()}ms, RESPONSE BELOW :`)
+            console.log(`PROPERTY ${mode} : ${props.property.name}, REQUEST TIME : ${requestTime}, RESPONSE TIME : ${getFormattedTimestamp()}, EXECUTION TIME : ${executionTime.toString()}ms, RESPONSE BELOW :`)
             if(response.data && response.data.state) 
-                clientState.setRemoteObjectState(response.data.state[props.parameter.owner_instance_name])
+                clientState.setRemoteObjectState(response.data.state[props.property.owner_instance_name])
             clientState.setLastResponse(response)
             if(response.data && response.data.exception) 
                 clientState.setError(response.data.exception.message, response.data.exception.traceback)
@@ -174,7 +174,7 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
             console.log(error)
             clientState.setError(error.message, null)
         }
-    }, [clientState, props.parameter, fullpath, timeout, paramValue])
+    }, [clientState, props.property, fullpath, timeout, paramValue])
 
     const readParam = useCallback(async() => await RWParam('READ'), [RWParam])
     const writeParam = useCallback(async() => await RWParam('WRITE'), [RWParam])
@@ -192,31 +192,31 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
 
     const handleFullpathChange = useCallback((event : SyntheticEvent, value : string | null) => {
         // @ts-ignore
-        console.log(props.parameter._supported_instance_names[value])
+        console.log(props.property._supported_instance_names[value])
         // @ts-ignore
-        setFullpath(props.parameter._supported_instance_names[value])
+        setFullpath(props.property._supported_instance_names[value])
     }, [])
 
     return (
-        <Stack id="parameter-rw-client" sx={{ flexGrow : 1, pt: 2 }}>
-            <ParameterInputChoice 
-                id='parameter-rw-client-input'
-                parameter={props.parameter} 
+        <Stack id="property-rw-client" sx={{ flexGrow : 1, pt: 2 }}>
+            <PropertyInputChoice 
+                id='property-rw-client-input'
+                property={props.property} 
                 choice={inputChoice} 
                 value={paramValue} 
                 setValue={setParamValue}
                 RWHook={RWParam}
             />
-            <Stack id='parameter-rw-client-options-layout' direction = "row" sx={{ flexGrow : 1 }}>
-                {props.parameter._supported_instance_names?
+            <Stack id='property-rw-client-options-layout' direction = "row" sx={{ flexGrow : 1 }}>
+                {props.property._supported_instance_names?
                     <Box sx={{ flexGrow : 0.1, pt : 2 }}>
                         <Autocomplete
                             id="instance-name-select-autocomplete"
                             disablePortal
                             autoComplete    
                             onChange={handleFullpathChange}
-                            defaultValue={Object.keys(props.parameter._supported_instance_names)[0]}
-                            options={Object.keys(props.parameter._supported_instance_names)}
+                            defaultValue={Object.keys(props.property._supported_instance_names)[0]}
+                            options={Object.keys(props.property._supported_instance_names)}
                             sx={{ flexGrow : 1 }}
                             renderInput={(params) => 
                                 <TextField 
@@ -230,7 +230,7 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
                 }
                 <FormControl sx={{pl : 2, pt : 2}}> 
                     <RadioGroup
-                        id="parameter-rw-client-input-choice-group"
+                        id="property-rw-client-input-choice-group"
                         row
                         value={inputChoice}
                         onChange={handleInputSelection}
@@ -250,7 +250,7 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
                     />
                 </Box>
                 <ButtonGroup 
-                    id='parameter-rw-client-interaction-buttons'
+                    id='property-rw-client-interaction-buttons'
                     variant="contained"
                     sx = {{pt :2, pr : 2, pb : 2}}
                     disableElevation
@@ -264,7 +264,7 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
                     </Button>
                     <Button 
                         sx={{ flexGrow: 0.05 }} 
-                        disabled={props.parameter.readonly}
+                        disabled={props.property.readonly}
                         onClick={writeParam}
                     >
                         Write
@@ -276,16 +276,16 @@ export const ParameterRWClient = (props : ParameterClientProps) => {
 }
 
 
-type ParameterInputChoiceProps = {
+type PropertyInputChoiceProps = {
     id : string 
     choice : string 
-    parameter : ParameterInformation
+    property : PropertyInformation
     value : any
     setValue : any
     RWHook : any
 }
 
-export const ParameterInputChoice = (props : ParameterInputChoiceProps) => {
+export const PropertyInputChoice = (props : PropertyInputChoiceProps) => {
 
     const theme = useTheme()
     switch(props.choice) {
@@ -293,7 +293,7 @@ export const ParameterInputChoice = (props : ParameterInputChoiceProps) => {
                                 <Stack direction='row' sx={{ flexGrow : 1 }}>
                                     <AceEditor
                                         name="param-client-json-input"
-                                        placeholder={props.parameter.readonly? "disabled" : 
+                                        placeholder={props.property.readonly? "disabled" : 
                                             "Enter value directly or under a value field like { 'value' : ... }"
                                         }
                                         mode="json"
@@ -317,7 +317,7 @@ export const ParameterInputChoice = (props : ParameterInputChoiceProps) => {
                                             enableSnippets: false,
                                             showLineNumbers: true,
                                             tabSize: 4,
-                                            readOnly : props.parameter.readonly 
+                                            readOnly : props.property.readonly 
                                         }}
                                     />
                                 </Stack>
@@ -328,9 +328,9 @@ export const ParameterInputChoice = (props : ParameterInputChoiceProps) => {
                             size="small"
                             maxRows={300}
                             onChange={(event) => props.setValue(event.target.value)}
-                            disabled={props.parameter.readonly}
-                            label={props.parameter.readonly? "read-only" : "data"}
-                            helperText={props.parameter.readonly? "disabled" : "press enter to expand"}
+                            disabled={props.property.readonly}
+                            label={props.property.readonly? "read-only" : "data"}
+                            helperText={props.property.readonly? "disabled" : "press enter to expand"}
                             sx={{ flexGrow: 1 }}
                         />
     }
@@ -363,17 +363,17 @@ function stringify(val, depth, replacer, space) {
 }
 
 
-export const ParameterDocViewer = ( props : ParameterClientProps) => {
+export const PropertyDocViewer = ( props : PropertyClientProps) => {
     
     const clientState = useContext(ClientContext) as RemoteObjectClientState
 
     return (
-        <Stack id="parameter-doc-viewer-table-layout" sx = {{ pl : 3, pr : 3, pt : 2, pb : 2, flexGrow : 1}}>
-            {props.parameter.chips.length > 0 ? 
+        <Stack id="property-doc-viewer-table-layout" sx = {{ pl : 3, pr : 3, pt : 2, pb : 2, flexGrow : 1}}>
+            {props.property.chips.length > 0 ? 
                 <Stack direction='row' sx = {{ pb : 1}}>
-                    {props.parameter.chips.map((name : string, index : number) => {
+                    {props.property.chips.map((name : string, index : number) => {
                         return (
-                            <Box  key={"parameter-doc-viewer-chip-"+name} sx={{pr : 1}}>
+                            <Box  key={"property-doc-viewer-chip-"+name} sx={{pr : 1}}>
                                 <Chip label={name} variant="filled" />
                             </Box>
                         )
@@ -384,26 +384,26 @@ export const ParameterDocViewer = ( props : ParameterClientProps) => {
                 rows={[
                     { id   : "DOC",
                       name : <DocRowTitle>DOC</DocRowTitle>, 
-                      info : props.parameter.doc },
+                      info : props.property.doc },
                     { id   : "URL",
                       name : <DocRowTitle>URL</DocRowTitle>, 
                       info : <Link 
-                                onClick={() => window.open(clientState.domain + props.parameter.fullpath)} 
+                                onClick={() => window.open(clientState.domain + props.property.fullpath)} 
                                 sx={{ alignItems : "center", cursor:'pointer', fontSize : 14,
                                     color : "#0000EE"}}
                                 underline="hover"
                                 variant="caption"
                             >
-                                {clientState.domain + props.parameter.fullpath}
+                                {clientState.domain + props.property.fullpath}
                             </Link>
                     },
-                    { id : "STATE" , name : <DocRowTitle>STATE</DocRowTitle>, info : props.parameter.state },
+                    { id : "STATE" , name : <DocRowTitle>STATE</DocRowTitle>, info : props.property.state },
                     { id : "WRITE_METHOD" , name : <DocRowTitle>Write Method</DocRowTitle>, 
-                      info : props.parameter.remote_info.http_method[1] },
+                      info : props.property.remote_info.http_method[1] },
                     { id : "READ_METHOD" , name : <DocRowTitle>Read Method</DocRowTitle>, 
-                      info : props.parameter.remote_info.http_method[0] },
+                      info : props.property.remote_info.http_method[0] },
                 ]}
-                tree={"parameter-doc-viewer-table-"+props.parameter.name}            
+                tree={"property-doc-viewer-table-"+props.property.name}            
             />
         </Stack>
     )
@@ -420,13 +420,13 @@ export const DocRowTitle = (props : any) => {
 
 
 type VisualizationProps = {
-    parameter : ParameterInformation
+    property : PropertyInformation
     clientState : RemoteObjectClientState
 }
 
 const VisualuationDummyAppContainer = {
-    id   : 'parameter-client-visualization',
-    tree : 'parameter-client-visualization-tree',
+    id   : 'property-client-visualization',
+    tree : 'property-client-visualization-tree',
     componentName : '__App__',
     props           : {},
     dynamicProps    : {},
@@ -440,14 +440,14 @@ const VisualuationDummyAppContainer = {
 export const Visualization = (props : VisualizationProps) => {
     const [docked, setDocked] = useState<boolean>(true)
     let component 
-    if(props.parameter.visualization === null)
+    if(props.property.visualization === null)
         return (
             <Typography sx={{pt : 2}}>
-                This is not a visualization parameter       
+                This is not a visualization property       
             </Typography>
         )
 
-    switch(props.parameter.visualization.type) {
+    switch(props.property.visualization.type) {
         case "plotly" : 
         case "sse-video" : component = <MobXVisualization 
                                             {...props} 
@@ -457,7 +457,7 @@ export const Visualization = (props : VisualizationProps) => {
                                            
         default : component = ( 
                     <Typography sx={{pt : 2}}>
-                        Visualization type not recognised, did you set the type field correctly? given type : {props.parameter.visualization.type}
+                        Visualization type not recognised, did you set the type field correctly? given type : {props.property.visualization.type}
                     </Typography>
                     )
     }
@@ -465,8 +465,8 @@ export const Visualization = (props : VisualizationProps) => {
     return (
         !docked?
             <NewWindow 
-                name={props.parameter.name} 
-                title={props.parameter.name}
+                name={props.property.name} 
+                title={props.property.name}
                 // onUnload={() => visualizationStateManager.reset()}
                 copyStyles={true}
             >
@@ -480,7 +480,7 @@ export const Visualization = (props : VisualizationProps) => {
 
 
 type MobXVisualizationProps = {
-    parameter : ParameterInformation
+    property : PropertyInformation
     clientState : RemoteObjectClientState
     docked : boolean
     setDocked : any
@@ -488,19 +488,19 @@ type MobXVisualizationProps = {
 
 export const MobXVisualization = (props : MobXVisualizationProps) => {
 
-    const [render, stateManager] = useMobXVisualization(props.parameter, clientState)
+    const [render, stateManager] = useMobXVisualization(props.property, clientState)
    
     return (
         <>
             {render?
                 <Stack
-                    id={props.parameter.name+'-visualization-box'}
+                    id={props.property.name+'-visualization-box'}
                     justifyContent="center"
                     alignItems="center"
                     sx={{ flexGrow : 1, pt : 2 }}
                 >
                     {(stateManager as StateManager).renderer.Component('__App__')}  
-                    {Object.keys((props.parameter.visualization as PlotlyInfo).actions).map((actionID : string) => {
+                    {Object.keys((props.property.visualization as PlotlyInfo).actions).map((actionID : string) => {
                         return (
                             <Box key={actionID} sx={{pb : 2}}>
                                 <ActionComponents 
@@ -519,7 +519,7 @@ export const MobXVisualization = (props : MobXVisualizationProps) => {
 
 
 
-const useMobXVisualization = (parameter : ParameterInformation, clientState : RemoteObjectClientState) => {
+const useMobXVisualization = (property : PropertyInformation, clientState : RemoteObjectClientState) => {
 
     const [render, setRender] = useState<boolean>(false)
     const [stateManager, setStateManager] = useState<StateManager | null>(null)
@@ -527,16 +527,16 @@ const useMobXVisualization = (parameter : ParameterInformation, clientState : Re
     useEffect(()=> {
         let shouldItRender = false
         let visualizationStateManager : StateManager | null = null
-        if(parameter.visualization) {
-            // visualizationStateManager = createHololinkedPortalStateManager(`${parameter.owner_instance_name}-${parameter.name}-visualization`)
+        if(property.visualization) {
+            // visualizationStateManager = createHololinkedPortalStateManager(`${property.owner_instance_name}-${property.name}-visualization`)
             // console.log("base url", clientState.baseURL)
-            for(let key of Object.keys(parameter.visualization.actions)) {
-                if(!parameter.visualization.actions[key].URL.startsWith('http'))
-                    parameter.visualization.actions[key].URL = clientState.baseURL + parameter.visualization.actions[key].URL
+            for(let key of Object.keys(property.visualization.actions)) {
+                if(!property.visualization.actions[key].URL.startsWith('http'))
+                    property.visualization.actions[key].URL = clientState.baseURL + property.visualization.actions[key].URL
             }
             // @ts-ignore CHECK WHY ITS COMPLAINING
-            visualizationStateManager.updateActions(parameter.visualization.actions)
-            let [id, state] = createVisualizationComponentState(parameter)
+            visualizationStateManager.updateActions(property.visualization.actions)
+            let [id, state] = createVisualizationComponentState(property)
             let components : { [key : string] : any } = { "__App__" : {
                 ...VisualuationDummyAppContainer,
                 children : [id]
@@ -559,15 +559,15 @@ const useMobXVisualization = (parameter : ParameterInformation, clientState : Re
 }
 
 
-export function createVisualizationComponentState(parameter : ParameterInformation) : [string, { [key: string] : any }] {
+export function createVisualizationComponentState(property : PropertyInformation) : [string, { [key: string] : any }] {
     let id, state 
     // @ts-ignore
-    switch(parameter.visualization.type){
+    switch(property.visualization.type){
         case 'plotly' : 
-            id = parameter.name+'-plotly-visualization';
+            id = property.name+'-plotly-visualization';
             state = {
-                id              : parameter.name+'-plotly-visualization',
-                tree            : parameter.name+'-plotly-visualization-tree',
+                id              : property.name+'-plotly-visualization',
+                tree            : property.name+'-plotly-visualization-tree',
                 componentName   : 'ContextfulPlotlyGraph',
                 props           : {},
                 dynamicProps    : {},
@@ -576,17 +576,17 @@ export function createVisualizationComponentState(parameter : ParameterInformati
                 stateMachine    : null,
                 children        : [],
                 dynamicChildren : [],
-                plot : (parameter.visualization as PlotlyInfo).plot,
+                plot : (property.visualization as PlotlyInfo).plot,
                 // @ts-ignore
-                sources : parameter.visualization.sources
+                sources : property.visualization.sources
             };
             break;
 
         case 'sse-video' : 
-            id = parameter.name+'-sse-video-visualization';
+            id = property.name+'-sse-video-visualization';
             state = {
-                id              : parameter.name+'-sse-video-visualization',
-                tree            : parameter.name+'-sse-video-visualization-tree',
+                id              : property.name+'-sse-video-visualization',
+                tree            : property.name+'-sse-video-visualization-tree',
                 componentName   : 'ContextfulSSEVideo',
                 props           : {},
                 boxProps        : {
@@ -601,12 +601,12 @@ export function createVisualizationComponentState(parameter : ParameterInformati
                 stateMachine    : null,
                 children        : [],
                 dynamicChildren : [],
-                sources         : (parameter.visualization as any).sources
+                sources         : (property.visualization as any).sources
             }
             break; 
 
         // @ts-ignore
-        default : throw new Error(`unknown visulization type ${parameter.visualization.type}`)
+        default : throw new Error(`unknown visulization type ${property.visualization.type}`)
     }
     return [id, state]
 }
@@ -682,6 +682,6 @@ export const ActionComponents = (props : {stateManager : StateManager, setDocked
                             </Stack>
                             )
 
-        default : return <Typography sx={{ pt : 2 }}>unknown action type or unsupported for visualization parameters</Typography>
+        default : return <Typography sx={{ pt : 2 }}>unknown action type or unsupported for visualization propertys</Typography>
     }*/
 }
