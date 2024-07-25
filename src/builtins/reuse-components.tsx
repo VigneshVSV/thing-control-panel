@@ -6,7 +6,8 @@ import NewWindow from "react-new-window";
 import { Backdrop, Box, CircularProgress, IconButton, Stack, Typography } from "@mui/material"
 import ArrowBackTwoToneIcon from '@mui/icons-material/ArrowBackTwoTone';
 // Custom component libraries 
-
+import { styled } from '@mui/system';
+import {TablePagination, tablePaginationClasses as classes } from '@mui/base/TablePagination';
 
 
 type TabPanelProps = {
@@ -217,6 +218,143 @@ export const RenderInWindow = (props : any) => {
         </>
     )
 }
+
+
+
+export default function UnstyledTable(props : { rows : Array<any>, tree : string, head? : any}) {
+    // https://mui.com/base-ui/react-table-pagination/#system-TableUnstyled.tsx
+    const [page, setPage] = React.useState(0);
+    const [rowsPerPage, setRowsPerPage] = React.useState(5);
+
+    // Avoid a layout jump when reaching the last page with empty rows.
+    const emptyRows =
+        page > 0 ? Math.max(0, (1 + page) * rowsPerPage - props.rows.length) : 0;
+
+    const handleChangePage = (
+        _ : React.MouseEvent<HTMLButtonElement> | null,
+        newPage: number,
+    ) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (
+        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    return (
+        <Root sx={{ maxWidth: '100%' }}>
+            <table>
+            {props.head? 
+                <>
+                    {props.head}
+                </>
+            : null}
+            <tbody key={props.tree+"body"}>
+                {(rowsPerPage > 0
+                    ? props.rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    : props.rows
+                ).map((row) => (
+                    <>
+                    {row.dynamic? 
+                        <>
+                            {row.component}
+                        </> : 
+                        <tr key={props.tree + row.id}>
+                            <td style={{width : "10%"}}>{row.name}</td>
+                            <td style={{width : "90%"}} align="center">
+                                {row.info}
+                            </td>
+                        </tr>  
+                    }
+                    </>
+                ))}
+                {emptyRows > 0 && (
+                    <tr style={{ height: 41 * emptyRows }}>
+                        <td colSpan={2} />
+                    </tr>
+                )}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <CustomTablePagination
+                        // @ts-ignore
+                        rowsPerPageOptions={[5, 10, 25, { label: 'All', value: -1 }]}
+                        count={props.rows.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        slotProps={{
+                            actions: {
+                                showFirstButton: true,
+                                showLastButton: true,
+                            },
+                        }}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                </tr>
+            </tfoot>
+            </table>
+        </Root>
+    );
+}
+
+const Root = styled('div')`
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td,
+    th {
+        border: 2px solid #ddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    th {
+        background-color: #ddd;
+    }
+`;
+
+// @ts-ignore
+const CustomTablePagination = styled(TablePagination)`
+    & .${classes.toolbar} {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+
+        @media (min-width: 768px) {
+        flex-direction: row;
+        align-items: center;
+        }
+    }
+
+    & .${classes.selectLabel} {
+        margin: 0;
+    }
+
+    & .${classes.displayedRows} {
+        margin: 0;
+
+        @media (min-width: 768px) {
+        margin-left: auto;
+        }
+    }
+
+    & .${classes.spacer} {
+        display: none;
+    }
+
+    & .${classes.actions} {
+        display: flex;
+        gap: 0.25rem;
+    }
+`;
 
 
 

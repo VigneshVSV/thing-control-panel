@@ -8,8 +8,9 @@
 // Internal & 3rd party functional libraries
 import { makeObservable, observable, action } from 'mobx';
 import axios, { AxiosResponse } from 'axios';
+import '../../lib/wot-bundle.min.js';
 // Custom functional libraries
-import { fetchFieldFromLocalStorage } from '@hololinked/mobx-render-engine/utils/misc';
+
 // Internal & 3rd party component libraries
 // Custom component libraries 
 
@@ -27,14 +28,19 @@ export type RemoteObjectInfo = {
 
 export class ResourceInformation {
 
-    title! : string
-    description! : string
+    title : string
+    description : string
     // our own
-    name! : string
-    type! : string
+    name : string
+    type : string
+    _state : string | string[]
 
-    constructor(data : Partial<ResourceInformation>) {
-        this.updateFromJSON(data);
+    constructor(data : Partial<ResourceInformation>, name : string = '') {  
+        this.title = ''
+        this.description = ''
+        this.name = name
+        this.type = ''
+        this._state = ''
     }
 
     get doc() : string {
@@ -44,22 +50,23 @@ export class ResourceInformation {
     }
 
     get state() : string {
-        if(!this.state) 
+        if(!this._state) 
             return "any state"
         let state = ''
-        for (let st of this.state)
+        for (let st of this._state)
             state = state? state + ', ' + st : st 
         return state // .substring(state.length - 2)
     }
 
+    set state(value : string | string[]) {
+        this._state = value
+    }
+
     updateFromJSON(json : { [key : string] : any }) : void {
         // Iterate over the keys of the JSON object
-        for (let key in json) {
-            // Check if the class has a property with the same name
-            if (this.hasOwnProperty(key)) {
-                // @ts-ignore
-                this[key] = json[key];
-            }
+        for (let key of Object.keys(json)) {
+            // @ts-ignore
+            this[key] = json[key];
         }
     }
 }
@@ -68,24 +75,41 @@ export class ResourceInformation {
 
 export class PropertyInformation extends ResourceInformation {
 
-    constant! : boolean
-    observable! : boolean
-    readOnly! : boolean
+    constant : boolean
+    observable : boolean
+    readOnly : boolean
     default : any
     // following are owr own
-    allow_None! : boolean
-    class_member! : boolean
-    db_commit! : boolean
-    db_init! : boolean
-    db_persist! : boolean
-    deepcopy_default! : boolean
-    per_instance_descriptor! : boolean
+    allow_None : boolean
+    class_member : boolean
+    db_commit : boolean
+    db_init : boolean
+    db_persist : boolean
+    deepcopy_default : boolean
+    per_instance_descriptor : boolean
     metadata : any
-   
+    
+    constructor(data: Partial<PropertyInformation>, name: string = '') {
+        super(data, name);
+        this.constant = false;
+        this.observable = false;
+        this.readOnly = false;
+        this.default = null;
+        this.allow_None = false;
+        this.class_member = false;
+        this.db_commit = false;
+        this.db_init = false;
+        this.db_persist = false;
+        this.deepcopy_default = false;
+        this.per_instance_descriptor = false;
+        this.metadata = null;
+        this.updateFromJSON(data);
+    }
+
     // property's own attributes for which chips should be shown
     chipKeys : string[] = ['allow_None' , 'class_member', 'constant', 'db_commit', 
-    'db_init', 'db_persist', 'deepcopy_default', 'per_instance_descriptor', 'readOnly',
-    'observable']
+        'db_init', 'db_persist', 'deepcopy_default', 'per_instance_descriptor', 'readOnly',
+        'observable']
 
     chipKeysSensibleString : { [key : string] : string } = {
         'allow_None' : "allows None" , 
@@ -123,15 +147,34 @@ export class PropertyInformation extends ResourceInformation {
     }
 }
 
-
-
 export class ActionInformation extends ResourceInformation {
     kwdefaults : any
     defaults : any
-    signature? : Array<string> 
+    signature : Array<string> 
+    forms : Array<{ [key : string] : string }>
+
+    constructor(data: Partial<ActionInformation>, name: string = '') {
+        super(data, name);
+        this.kwdefaults = null;
+        this.defaults = null;
+        this.signature = [];
+        this.forms = [];
+        this.updateFromJSON(data);
+    }
 }
 
-export class EventInformation extends ResourceInformation {}
+export class EventInformation extends ResourceInformation {
+
+    forms : Array<{ [key : string] : string }>
+    data : any
+
+    constructor(data: Partial<EventInformation>, name: string = '') {
+        super(data, name);
+        this.forms = [];
+        this.data = null;
+        this.updateFromJSON(data);
+    }
+}
 
 
 
@@ -148,21 +191,16 @@ export class ThingInformation  {
         this.actions = []
         this.events = []
         for (let key of Object.keys(info.properties)) 
-            this.properties.push(new PropertyInformation(info.properties[key as string]))
+            this.properties.push(new PropertyInformation(info.properties[key as string], key))
         for (let key of Object.keys(info.actions))
-            this.actions.push(new ActionInformation(info.actions[key]))
+            this.actions.push(new ActionInformation(info.actions[key], key))
         for (let key of Object.keys(info.events))
-            this.events.push(new EventInformation(info.events[key]))
+            this.events.push(new EventInformation(info.events[key], key))
         this.inheritance = info.inheritance
         this.description = info.description
         this.id = info.id
     }
 }
-
-
-
-
-
 
 export const emptyThingInformation = new ThingInformation({
     id : '',
@@ -181,6 +219,8 @@ export class Thing {
     info : ThingInformation
     td : any 
     client : any
+    servient : Wot.Core.Servient
+    wot : Wot.Core.WoT
     // error displays
     fetchSuccessful : boolean
     errorMessage :  string
@@ -196,33 +236,27 @@ export class Thing {
     
 
     constructor() {
-
         this.info = emptyThingInformation
         this.td = null
         this.client = null
         this.fetchSuccessful = true 
        
-       
         this.errorMessage = ''
         this.errorTraceback = null 
         this.hasError = false  
         this.lastResponse = null 
+
         this.eventSources = {}
-     
-        this.existingRO_URLs = typeof window !== 'undefined'? fetchFieldFromLocalStorage('remote-object-locator-text-input', []) : []
-   
+        
         makeObservable(this, {
             info : observable,
             fetch : action,
             setInfo : action, 
             clearState : action,
           
-    
             fetchSuccessful : observable, 
             setFetchSuccessful : action,
 
-            existingRO_URLs : observable,
-        
             errorMessage :  observable,
             errorTraceback :  observable,  
             setError : action,
@@ -237,46 +271,6 @@ export class Thing {
         })
     }
 
-    setError (message = '', traceback = null) {
-        this.errorMessage = message 
-        this.errorTraceback = traceback
-        this.hasError = true
-    }
-
-    resetError() {
-        this.errorMessage = ''
-        this.errorTraceback = null 
-        this.fetchSuccessful = true
-        this.hasError = false 
-    }
-
-    setInfo(thingInfo : ThingInformation) {
-        this.info = thingInfo
-    }
-
-    clearState() {
-        // delete thingInfo
-        this.info = emptyThingInformation
-        this.resetError()
-    }
-
-    setFetchSuccessful(value :  boolean) {
-        this.fetchSuccessful = value
-    }
-
-    addEventSource(URL : string, src : EventSource) {
-        this.eventSources[URL] = src
-    }
-
-    removeEventSource(URL : string){
-        if(this.eventSources[URL])
-            delete this.eventSources[URL]
-    }
-
-    setLastResponse(response : any) {
-        this.lastResponse = response 
-    }
-
     async fetch(baseurl : string) { 
         // this method always when set as action will raise a warning in MobX due to being async 
         // https://stackoverflow.com/questions/64770762/mobx-since-strict-mode-is-enabled-changing-observed-observable-values-withou
@@ -288,12 +282,16 @@ export class Thing {
                 baseURL : baseurl
                 // httpsAgent: new https.Agent({ rejectUnauthorized: false })
             }) as AxiosResponse
+            // debugger
             if (response.status === 200) {
                 if (response.data && response.data.id) {
-                    let roinfo : ThingInformation = new ThingInformation(response.data) 
-                    this.setInfo(roinfo)
-                    this.setFetchSuccessful(true)
+                    this.td = response.data
+                    this.client = await this.wot.consume(this.td)
+                    console.log("consumed thing description & client available")
+                    this.setInfo(new ThingInformation(response.data))
+                    this.setLastResponse(response.data)
                     this.resetError()
+                    this.setFetchSuccessful(true)
                 }
             }
             else if(response.data && response.data.exception) {
@@ -314,14 +312,60 @@ export class Thing {
         console.debug(this.info)
     }
 
-   
+    setFetchSuccessful(value :  boolean) {
+        this.fetchSuccessful = value
+    }
 
-    getObjects(name : "Properties" | "Actions" | "Events") : { [key : string] : any } {
-        switch(name) {
+    setInfo(thingInfo : ThingInformation) {
+        this.info = thingInfo
+    }
+
+    clearState() {
+        // delete thingInfo
+        this.info = emptyThingInformation
+        this.resetError()
+    }
+
+    setError (message = '', traceback = null) {
+        this.errorMessage = message 
+        this.errorTraceback = traceback
+        this.hasError = true
+    }
+
+    resetError() {
+        if(this.hasError){    
+            this.errorMessage = ''
+            this.errorTraceback = null 
+            this.fetchSuccessful = true
+            this.hasError = false 
+        }
+    }
+
+    setLastResponse(response : any) {
+        this.lastResponse = response 
+    }
+
+    addEventSource(URL : string, src : EventSource) {
+        this.eventSources[URL] = src
+    }
+
+    removeEventSource(URL : string){
+        if(this.eventSources[URL])
+            delete this.eventSources[URL]
+    }
+
+    getInteractionAffordances(type : "Properties" | "Actions" | "Events") : { [key : string] : any } {
+        switch(type) {
             case 'Actions' : return this.info.actions
             case 'Events' : return this.info.events
             default : return this.info.properties
         }
     }
+
+    get logEventsPusherURL() : string { return '/resources/log-events' }
+
+    get logEventsStopURL() : string { return '/resources/log-events' }
+
+    get logEventsURL() : string { return '/resources/log-events' }
 }
 

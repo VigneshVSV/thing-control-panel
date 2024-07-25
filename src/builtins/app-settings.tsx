@@ -489,7 +489,8 @@ title = 'Main Server'
 
 
 
-export type ApplicationSettings = {
+export type ClientSettings = {
+    tabOrientation : "horizontal" | "vertical"
     console : {
         stringifyOutput : boolean 
         defaultMaxEntries : number 
@@ -504,7 +505,8 @@ export type ApplicationSettings = {
     }
 }
 
-export const defaultAppSettings : ApplicationSettings = {
+export const defaultClientSettings : ClientSettings = {
+    tabOrientation : 'vertical',
     console : {
         stringifyOutput : false,
         defaultMaxEntries : 10,

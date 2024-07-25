@@ -1,7 +1,8 @@
 // Internal & 3rd party functional libraries
-import {  useState, useRef, useCallback, useContext, createContext } from "react";
+import {  useState, useRef, useCallback, useContext, createContext, useEffect } from "react";
 import * as React from "react";
 import { observer } from "mobx-react-lite";
+import '../../lib/wot-bundle.min.js';
 // Custom functional libraries
 // Internal & 3rd party component libraries
 import { Box, Button, Stack, Tab, Tabs, Typography, TextField, Divider,
@@ -19,9 +20,9 @@ import NewWindow from "react-new-window";
 // Custom component libraries
 import { EventInformation, ActionInformation, PropertyInformation, ResourceInformation, Thing} from './state'
 import { ErrorBackdrop, TabPanel } from "../reuse-components";
-import { defaultAppSettings } from "../app-settings";
+import { ClientSettings, defaultClientSettings } from "../app-settings";
 import { SelectedPropertyWindow } from "./property-client";
-import { SelectedMethodWindow } from "./method-client";
+import { SelectedActionWindow } from "./action-client";
 import { SelectedEventWindow } from "./events-client";
 import { ErrorBoundary, LiveLogViewer, ResponseLogs, UndockableConsole } from "./output-components";
 import { ClassDocWindow } from "./doc-viewer";
@@ -37,9 +38,9 @@ export const ThingViewer = observer(() => {
             sx={{ flexGrow: 3, display : 'flex', pl : 3, pr : 3 }}
         >
             <UndockableInteractionWindow />
-            {/* <ErrorBoundary />
+            <ErrorBoundary />
             <ResponseLogs />
-            <UndockableConsole /> */}
+            <UndockableConsole />
         </Stack>
     )
 })
@@ -51,16 +52,21 @@ export const Locator = observer(() => {
     const [existingURLs, modifyOptions] = useAutoCompleteOptionsFromLocalStorage('thing-url-text-input')
     const [currentURL, setCurrentURL] = useState<string>('')
     const thing = useContext(ThingManager) as Thing
-    const { showSettings, setShowSettings } = useContext(PageContext) as PageProps
+    const { showSettings, setShowSettings, settings } = useContext(PageContext) as PageProps
 
-    const fetchThing = useCallback(async() => {
+    const fetchThing = useCallback(async(currentURL : string) => {
         await thing.fetch(currentURL)
-        // if(this.stringifyOutput)
-        //     console.log(JSON.stringify(response, null, 2))
-        // else 
-        //     console.log(response)
-        // console.log("could not load remote object information")
-    }, [currentURL])
+        if(!thing.fetchSuccessful) {
+            console.log("could not load remote object information")
+            if(settings.console.stringifyOutput)
+                console.log(JSON.stringify(thing.lastResponse, null, 2))
+            else 
+                console.log("last response", thing.lastResponse)
+            console.log(thing.errorMessage)
+            console.log(thing.errorTraceback)
+        }
+
+    }, [settings])
     
     return (
         <Stack id="thing-locator-layout" direction="row" sx={{ flexGrow : 1, display : 'flex' }}>
@@ -79,12 +85,13 @@ export const Locator = observer(() => {
                 currentURL={currentURL}
                 setCurrentURL={setCurrentURL}
                 editURLsList={modifyOptions}
+                fetchThing={fetchThing}
             />
             <Box id="thing-loader-buttons-box" sx={{ flexGrow: 0.01, display : 'flex', pb : 3}} >
                 <Button
                     id="load-thing-using-url-locator"
                     size="small"
-                    onClick={async() => await thing.fetch(currentURL)}
+                    onClick={async() => await fetchThing(currentURL)}
                     sx={{ borderRadius : 0 }}
                 >
                     Load
@@ -129,20 +136,20 @@ type LocatorAutocompleteProps = {
     currentURL : string
     setCurrentURL : React.Dispatch<React.SetStateAction<string>>
     editURLsList : (inputURL : string, operation : 'ADD' | 'REMOVE') => void
+    fetchThing : (currentURL : string) => void
 }
 
 const LocatorAutocomplete = observer(({ 
     existingURLs, 
     currentURL, 
     setCurrentURL, 
-    editURLsList 
+    editURLsList,
+    fetchThing
 } : LocatorAutocompleteProps) => {
-
-    const thing = useContext(ThingManager) as Thing
 
     // show delete button at given option
     const [autocompleteShowDeleteIcon, setAutocompleteShowDeleteIcon] = useState<string>('')
-    // const fetchSuccessful = thing.fetchSuccessful
+    const thing = useContext(ThingManager) as Thing
 
     return (
         <Autocomplete
@@ -159,12 +166,12 @@ const LocatorAutocomplete = observer(({
                 <TextField
                     label="URL"
                     variant="filled"
-                    // error={!fetchSuccessful}
+                    error={!thing.fetchSuccessful}
                     sx={{ flexGrow: 0.99, display : 'flex', borderRadius : 0 }}
                     onChange={(event) => setCurrentURL(event.target.value)}
                     onKeyDown={async (event) => {
                         if (event.key === 'Enter') {
-                            await thing.fetch(currentURL)
+                            await fetchThing(currentURL)
                         }
                     }}
                     {...params}
@@ -194,16 +201,17 @@ const LocatorAutocomplete = observer(({
 
 
 
-const thingFields = ['Properties', 'Actions', 'Events', 'Doc']
+const thingFields = ['Properties', 'Actions', 'Events', 'Doc', 'Log Viewer']
 
 const UndockableInteractionWindow = observer(() => {
 
     const thing = useContext(ThingManager) as Thing
+    const { settings } = useContext(PageContext) as PageProps
     const [currentTab, setCurrentTab] = useState<number>(0)
     const [undock, setUndock] = useState<number>(-1)
     const [duplicates, setDuplicates] = useState<number[]>([])
     const undockedTab = useRef<number>(undock)
-    const [tabOrientation, _] = useState<"vertical" | "horizontal">("vertical")
+    const [tabOrientation, _] = useState<"vertical" | "horizontal">(settings.tabOrientation)
 
     const handleRemoteObjectFieldTabChange = useCallback(
         (_: React.SyntheticEvent, newValue: number) => {
@@ -295,7 +303,7 @@ const UndockableInteractionWindow = observer(() => {
                                                 {thingFields[undockedTab.current]} - {thing.info.id}
                                             </Typography>
                                         </Divider>
-                                        <Functionalities name={thingFields[undockedTab.current]} />
+                                        <Functionalities type={thingFields[undockedTab.current]} />
                                         {/* undocked={undockedTab.current >= 0} */}
                                     </Box>
                                 </NewWindow>
@@ -307,7 +315,7 @@ const UndockableInteractionWindow = observer(() => {
                                 index={index}
                                 value={currentTab}
                             >
-                                <Functionalities name={name} />
+                                <Functionalities type={name} />
                                 {/* undocked={undockedTab.current === index} */}
                             </TabPanel>
                         )
@@ -326,7 +334,7 @@ const UndockableInteractionWindow = observer(() => {
                                     {thingFields[tabNum]} - {thing.info.id}
                                 </Typography>
                             </Divider>
-                            <Functionalities name={thingFields[tabNum]} />
+                            <Functionalities type={thingFields[tabNum]} />
                         </Box>
                     </NewWindow>
                 )}
@@ -337,37 +345,35 @@ const UndockableInteractionWindow = observer(() => {
 
 
 
-const Functionalities = observer(({ name } : { name : string }) => {
+const Functionalities = observer(({ type } : { type : string }) => {
 
-    switch(name) {
+    switch(type) {
 
         case 'Doc' : return <ClassDocWindow />
-
-        // case 'Default GUI'   : return  <GUIViewer hasGUI={thing.remoteObjectInfo.hasGUI}></GUIViewer>
 
         case 'Database' : return <Typography sx={{p : 2}}>No DB client</Typography>
 
         case 'Log Viewer' : return <LiveLogViewer />
 
-        default : return <InteractionAffordanceWindow name={name as "Properties" | "Actions" | "Events"} />
+        default : return <InteractionAffordanceWindow type={type as "Properties" | "Actions" | "Events"} />
                    
     }
 })
 
 
 
-export const InteractionAffordanceWindow = observer(({ name } : { name : "Properties" | "Actions" | "Events" }) => {
+export const InteractionAffordanceWindow = observer(({ type } : { type : "Properties" | "Actions" | "Events" }) => {
 
     const thing = useContext(ThingManager) as Thing
 
     // interaction affordance object selection number
-    const objects = thing.getObjects(name)
-    const [selectedIndex, setSelectedIndex] = useState<Array<string|number>>(['RemoteObject', 0]);
+    const objects = thing.getInteractionAffordances(type)
+    const [selectedIndex, setSelectedIndex] = useState<number>(0);
     const handleListItemClick = useCallback((
             _ : React.MouseEvent<HTMLDivElement, MouseEvent>,
-            sortKey : string, index: number,
+            index: number,
         ) => {
-            setSelectedIndex([sortKey, index]);
+            setSelectedIndex(index);
             // console.log(sortKey, index, objects[sortKey][index])
     }, [setSelectedIndex])
 
@@ -386,60 +392,53 @@ export const InteractionAffordanceWindow = observer(({ name } : { name : "Proper
                     disablePadding
                     sx={{ flexGrow : 1 }}
                 >
-                    {Object.keys(objects).map((key : string) => {
-                        if(objects[key].length === 0)
-                            return <div key={key}></div>
-                        else
-                            return (
-                                <div key={key}>
-                                    <Divider><Typography variant="button">{key.toUpperCase()}</Typography></Divider>
-                                    {objects[key].map((object : ResourceInformation, index : number) => {
-                                        return (
-                                            <ListItem
-                                                key={`interaction-affordance-client-${name}-${object.name}`}
-                                                id={`interaction-affordance-${name}-${object.name}`}
-                                                alignItems="flex-start"
-                                                disablePadding
+                    {objects.map((object : ResourceInformation, index : number) => {
+                        return (
+                            <ListItem
+                                key={`interaction-affordance-client-${type}-${object.name}`}
+                                id={`interaction-affordance-${type}-${object.name}`}
+                                alignItems="flex-start"
+                                disablePadding
+                            >
+                                <ListItemButton
+                                    key={`interaction-affordance-${type}-${object.name}-choosing-button`}
+                                    selected={selectedIndex === index}
+                                    onClick={(event) => handleListItemClick(event, index)}
+                                >
+                                    <ListItemText
+                                        key={`interaction-affordance-${type}-${object.name}-text-display`}
+                                        primary={
+                                            <Typography
+                                                sx={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between'
+                                                }}
                                             >
-                                                <ListItemButton
-                                                    key={`interaction-affordance-${name}-${object.name}-choosing-button`}
-                                                    selected={selectedIndex[1] === index && selectedIndex[0] === key}
-                                                    onClick={(event) => handleListItemClick(event, key, index)}
-                                                >
-                                                    <ListItemText
-                                                        key={`interaction-affordance-${name}-${object.name}-text-display`}
-                                                        primary={
-                                                            <Typography
-                                                                sx={{
-                                                                    display: 'flex',
-                                                                    justifyContent: 'space-between'
-                                                                }}
-                                                            >
-                                                                <span>{object.name}</span>
-                                                                {object.type?
-                                                                <span style={{color : 'rgba(0, 0, 0, 0.5)'}}>
-                                                                    {object.type}
-                                                                </span> : null}
-                                                            </Typography>
-                                                        }
-                                                    />
-                                                </ListItemButton>
-                                            </ListItem>
-                                        )
-                                    })}
-                                </div>
-                        )})}
+                                                <span>{object.name}</span>
+                                                {object.type?
+                                                    <span style={{color : 'rgba(0, 0, 0, 0.5)'}}>
+                                                        {object.type}
+                                                    </span> 
+                                                    : 
+                                                    null
+                                                }
+                                            </Typography>
+                                        }
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        )
+                    })}
                 </List>
             </Box>
             <Divider orientation="vertical" sx={{ borderWidth : 2 }} />
             <Box sx={{ width : "50%", pl : 2, pr : 1, overflow : 'auto', height : '100%' }}>
                 {
-                    objects[selectedIndex[0]] ?
-                    objects[selectedIndex[0]][selectedIndex[1]] ?
+                    objects[selectedIndex] ?
                     <ClientSelect
-                        object={objects[selectedIndex[0]][selectedIndex[1]]}
-                        name={name}
-                    /> : null : null
+                        object={objects[selectedIndex]}
+                        type={type}
+                    /> : null 
                 }
             </Box>
         </Stack>
@@ -450,36 +449,38 @@ export const InteractionAffordanceWindow = observer(({ name } : { name : "Proper
 
 type ClientSelectProps = {
     object : ResourceInformation
-    name : string
+    type : string
 }
 
-export const ClientSelect = ({ object, name } : ClientSelectProps) => {
-    
-    switch(name) {
-        // case 'Events' : return <SelectedEventWindow event={object as EventInformation} />                
-        default : return <SelectedMethodWindow method={object as ActionInformation} />                
-        // default : return <SelectedPropertyWindow property={object as PropertyInformation} />
+export const ClientSelect = ({ object, type } : ClientSelectProps) => {
+    switch(type) {
+        case 'Events' : return <SelectedEventWindow event={object as EventInformation} />                
+        case 'Actions' : return <SelectedActionWindow action={object as ActionInformation} />                
+        default : return <SelectedPropertyWindow property={object as PropertyInformation} />
     }
 }
 
 
 
-type PageProps = {
+export type PageProps = {
     showSettings : boolean
     setShowSettings : React.Dispatch<React.SetStateAction<boolean>> | Function
+    settings : ClientSettings
 }
 
 export const ThingManager = createContext<Thing | null>(null)
 export const PageContext = createContext<any>({
     showSettings : false,
-    setShowSettings : () => {}
+    setShowSettings : () => {},
+    settings : defaultClientSettings
 })
 
 export const ThingClient = () => {
 
     const [showSettings, setShowSettings] = useState<boolean>(false)
+    const [settings, setSettings] = useState<ClientSettings>(defaultClientSettings)
     const thing = useRef<Thing>(new Thing())
-    const [pageState, _] = useState({ showSettings, setShowSettings })
+    const [pageState, _] = useState({ showSettings, setShowSettings, settings })
 
     /* 
     Thing Client composes Thing Viewer, Location and Settings components which controls the settings of the client
@@ -490,6 +491,20 @@ export const ThingClient = () => {
 
     2. purely component rendering data may be also part of contexts
     */
+   useEffect(() => {
+        const startServient = async() => {
+            const servient = new Wot.Core.Servient(); 
+            // Wot.Core is auto-imported by wot-bundle.min.js
+            servient.addClientFactory(new Wot.Http.HttpsClientFactory({ allowSelfSigned : true }))
+            servient.start().then((WoT : any) => {
+                console.log("WoT servient started")
+                thing.current.servient = servient  
+                thing.current.wot = WoT
+            })
+        }
+        startServient()
+   }, [])
+
 
     return (
         <Box
@@ -505,7 +520,7 @@ export const ThingClient = () => {
                     </Stack>
                     :
                     <ErrorBackdrop
-                        message="settings panel for unsafe client not implement yet"
+                        message="settings panel for direct client not implement yet"
                         goBack={() => setShowSettings(false)}
                     />
                 }

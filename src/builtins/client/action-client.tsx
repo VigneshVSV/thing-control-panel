@@ -6,7 +6,7 @@ import { getFormattedTimestamp } from "@hololinked/mobx-render-engine/utils/misc
 import { asyncRequest } from "@hololinked/mobx-render-engine/utils/http";
 // Internal & 3rd party component libraries
 import { Stack, Divider, Tabs, Tab, FormControl, FormControlLabel, Button, ButtonGroup, 
-    RadioGroup, Box, Radio, useTheme, TextField, Link, Checkbox, Autocomplete} from "@mui/material";
+    RadioGroup, Box, Radio, useTheme, TextField, Link, Checkbox } from "@mui/material";
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-crimson_editor"
@@ -14,53 +14,52 @@ import "ace-builds/src-noconflict/ext-language_tools";
 // Custom component libraries 
 import { ActionInformation, Thing } from "./state";
 import { TabPanel } from "../reuse-components";
-import UnstyledTable from "./doc-viewer";
-import { DocRowTitle } from "./property-client";
-import { ThingManager } from "./view";
+import { PageContext, ThingManager, PageProps } from "./view";
+import { ObjectInspector } from "react-inspector";
     
     
 
-type SelectedMethodWindowProps = {
-    method : ActionInformation
+type SelectedActionWindowProps = {
+    action : ActionInformation
 }
 
-const methodFields = ['Execute', 'Doc']
+const actionFields = ['Execute', 'Doc']
 
-export const SelectedMethodWindow = ( props : SelectedMethodWindowProps) => {
+export const SelectedActionWindow = (props : SelectedActionWindowProps) => {
 
-    const [methodFieldsTab, setMethodFieldsTab] = useState(0);
-    const handleParameterFieldTabChange = useCallback((_ : React.SyntheticEvent, newValue: number) => {
-        setMethodFieldsTab(newValue);
+    const [actionFieldsTab, setActionFieldsTab] = useState(0);
+    const handleTabChange = useCallback((_ : React.SyntheticEvent, newValue: number) => {
+        setActionFieldsTab(newValue);
     }, [])
     
     return (
-        <Stack id="selected-method-view-layout" sx={{ flexGrow: 1, display : 'flex' }} >
+        <Stack id="selected-action-view-layout" sx={{ flexGrow: 1, display : 'flex' }} >
             <Tabs
-                id="selected-method-fields-tab"
+                id="selected-action-fields-tab"
                 variant="scrollable"
-                value={methodFieldsTab}
-                onChange={handleParameterFieldTabChange}
+                value={actionFieldsTab}
+                onChange={handleTabChange}
                 sx={{ borderBottom: 2, borderColor: 'divider' }}
-                >
-                {methodFields.map((name : string) => 
+            >
+                {actionFields.map((name : string) => 
                     <Tab 
-                        key={"selected-method-fields-tab-"+name}    
+                        key={"selected-action-fields-tab-"+name}    
                         id={name} 
                         label={name} 
                         sx={{ maxWidth: 150}} 
                     />
                 )}
             </Tabs>
-            {methodFields.map((name : string, index : number) => 
+            {actionFields.map((name : string, index : number) => 
                 <TabPanel 
-                    key={"selected-method-fields-tabpanel-"+name}
-                    tree="selected-method-fields-tab"
-                    value={methodFieldsTab} 
+                    key={"selected-action-fields-tabpanel-"+name}
+                    tree="selected-action-fields-tab"
+                    value={actionFieldsTab} 
                     index={index} 
                 >
-                    <MethodTabComponents 
-                        name={name} 
-                        {...props} 
+                    <ActionTabComponents 
+                        tab={name} 
+                        action={props.action}
                     />
                 </TabPanel>
             )} 
@@ -70,32 +69,37 @@ export const SelectedMethodWindow = ( props : SelectedMethodWindowProps) => {
 
 
 
-type MethodTabComponentsProps = {
-    name : string
-    method : ActionInformation
+type ActionTabComponentsProps = {
+    tab : string
+    action : ActionInformation
 }
 
-export const MethodTabComponents = (props : MethodTabComponentsProps) => {
+export const ActionTabComponents = ( {tab, action} : ActionTabComponentsProps) => {
 
-    switch(props.name) {
-        case "Doc"      : return <MethodDocViewer {...props}></MethodDocViewer>
-        default : return <MethodExecutionClient {...props} ></MethodExecutionClient>
+    
+    switch(tab) {
+        case "Doc" : {
+            const thing = useContext(ThingManager) as Thing
+            return <ObjectInspector expandLevel={3} data={thing.td["actions"][action.name]} /> 
+        }
+        default : return <ActionExecutionClient action={action} ></ActionExecutionClient>
     }
 }
 
 
 
-type MethodExecutionProps = {
-    method : ActionInformation
+type ActionExecutionProps = {
+    action : ActionInformation
 }
 
-export const MethodExecutionClient = (props : MethodExecutionProps) => {
+export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
 
-    const clientState = useContext(ThingManager) as Thing
+    const thing = useContext(ThingManager) as Thing
+    const { settings } = useContext(PageContext) as PageProps
     
+    const [clientChoice, setClientChoice] = useState('node-wot')
     const [fetchExecutionLogs, setFetchExecutionLogs] = useState<boolean>(false)                                                                                               
     const [inputChoice, setInputChoice ] = useState('JSON')
-    const [fullpath, setFullpath] = useState<string>(props.method.fullpath)
     const [timeout, setTimeout] = useState<number>(-1)
     const [timeoutValid, setTimeoutValid] = useState<boolean>(true)
     const [kwargsValue, setKwargsValue] = useState<any>(null)
@@ -105,15 +109,15 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
 
     useEffect(() => {
         // setInputChoice(props.parameter.inputType)
-        setFullpath(props.method.fullpath)
         return () => setKwargsValue(null)
-    }, [props.method])
+    }, [action])
     
-    const callMethod = useCallback(async () => {
+    const invokeAction = useCallback(async () => {
         try {
-            let data 
-            let _fullpath 
-            if(props.method.remote_info.http_method[0].toLowerCase() === 'get') {
+            let data, _fullpath 
+            let fullpath = action.forms[0]["href"]
+            let http_method = action.forms[0]["htv:methodName"]
+            if(http_method.toLowerCase() === 'get') {
                 data = null
                 _fullpath = fullpath + `?timeout=${timeout}`
                 if(fetchExecutionLogs)
@@ -127,48 +131,49 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
                     }
                 _fullpath = fullpath  
             }
+            let consoleOutput
             const requestTime = getFormattedTimestamp()
             const requestTime_ = Date.now()
-            const response = await asyncRequest({
-                url : _fullpath, 
-                method : props.method.remote_info.http_method[0] as any, 
-                data : data, 
-                baseURL : clientState.domain,
-                // httpsAgent: new https.Agent({ rejectUnauthorized: false })
-            }) as AxiosResponse
-            let executionTime = Date.now() - requestTime_
-            clientState.setLastResponse(response)
-            if(response.status >= 200 && response.status < 300) {
-                if(clientState.stringifyOutput) 
-                    console.log("\n" + JSON.stringify(response.data, null, 2))
-                else 
-                    console.log(response.data)
-                if(response.data && response.data.state) 
-                    clientState.setRemoteObjectState(response.data.state[props.method.owner_instance_name])
-                if(clientState.hasError)
-                    clientState.resetError()
-            }
-            else if(response.data && response.data.exception) {
-                clientState.setError(response.data.exception.message, response.data.exception.traceback)
-                if(clientState.stringifyOutput)
-                    console.log(JSON.stringify(response, null, 2))
-                else 
-                    console.log(response)
+            if(clientChoice !== 'node-wot') {
+                const response = await asyncRequest({
+                    url : _fullpath, 
+                    method : http_method, 
+                    data : data
+                    // httpsAgent: new https.Agent({ rejectUnauthorized: false })
+                }) as AxiosResponse
+                if(response.status >= 200 && response.status < 300) {
+                    if(response.data) 
+                        consoleOutput = response.data
+                    thing.resetError()
+                }
+                else if(response.data && response.data.exception) {
+                    thing.setError(response.data.exception.message, response.data.exception.traceback)
+                    consoleOutput = response.data.exception 
+                }
+                else {
+                    consoleOutput = response
+                }
+                thing.setLastResponse(response)
             }
             else {
-                if(clientState.stringifyOutput)
-                    console.log(JSON.stringify(response, null, 2))
-                else 
-                    console.log(response)
-                // console.log("execution unsuccessful")
-            }
-            console.log(`METHOD EXECUTION : ${props.method.qualname}, REQUEST TIME : ${requestTime}, RESPONSE TIME : ${getFormattedTimestamp()}, EXECUTION TIME : ${executionTime.toString()}ms, RESPONSE BELOW : `)
+                let lastResponse = await thing.client.invokeAction(action.name, data)
+                thing.setLastResponse(lastResponse)
+                consoleOutput = await lastResponse.value()
+                if(!consoleOutput)
+                    consoleOutput = 'no return value'
+            }       
+            if(settings.console.stringifyOutput) 
+                console.log("\n" + JSON.stringify(consoleOutput, null, 2))
+            else 
+                console.log(consoleOutput)
+            let executionTime = Date.now() - requestTime_
+            console.log(`ACTION EXECUTION : ${thing.td.title}.${action.name}, REQUEST TIME : ${requestTime}, RESPONSE TIME : ${getFormattedTimestamp()}, EXECUTION TIME : ${executionTime.toString()}ms, RESPONSE BELOW : `)
         } 
         catch(error : any){
             // console.log(error)
-            clientState.setError(error.message, null)
+            thing.setError(error.message, null)
         } 
-    }, [clientState, props.method, fullpath, fetchExecutionLogs, kwargsValue, timeout])
+    }, [thing, action, settings, fetchExecutionLogs, kwargsValue, timeout, clientChoice])
 
     const handleTimeoutChange = useCallback((event : any) => {
         let oldTimeout =  timeout 
@@ -181,46 +186,19 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
         setTimeoutValid(timeoutValid)
     }, [timeout, setTimeout])
 
-    const handleFullpathChange = useCallback((event : React.SyntheticEvent, value : string | null) => {
-        // @ts-ignore
-        console.log(props.parameter._supported_instance_names[value])
-        // @ts-ignore
-        setFullpath(props.parameter._supported_instance_names[value])
-    }, [])
-
-
+  
     return (
-        <Stack id='method-execution-client-layout' sx={{ flexGrow: 1, display : 'flex', pt: 2 }}>
-            <MethodInputChoice 
+        <Stack id='action-execution-client-layout' sx={{ flexGrow: 1, display : 'flex', pt: 2 }}>
+            <ActionInputChoice 
                 choice={inputChoice} 
-                signature={props.method.signature} 
+                signature={action.signature} 
                 setValue={setKwargsValue} 
                 value={kwargsValue}    
             />
-            <Stack id='method-execution-client-options-layout' direction = "row" sx={{ flexGrow: 1, display : 'flex'}}>
-                {props.method._supported_instance_names?
-                    <Box sx={{display : 'flex', flexGrow : 0.1, pt : 2}}>
-                        <Autocomplete
-                            id="instance-name-select-autocomplete"
-                            disablePortal
-                            autoComplete    
-                            onChange={handleFullpathChange}
-                            defaultValue={Object.keys(props.method._supported_instance_names)[0]}
-                            options={Object.keys(props.method._supported_instance_names)}
-                            sx={{ flexGrow : 1, display: 'flex'}}
-                            renderInput={(params) => 
-                                <TextField 
-                                    {...params} 
-                                    variant="standard"
-                                    helperText="choose instance name" 
-                                    size="medium"
-                                />}
-                        /> 
-                    </Box> : null 
-                } 
+            <Stack id='action-execution-client-options-layout' direction = "row" sx={{ flexGrow: 1, display : 'flex'}}>
                 <FormControl sx={{pl : 2, pt : 2}}> 
                     <RadioGroup
-                        id="methods-execution-client-input-choice-group"
+                        id="actions-execution-client-input-choice-group"
                         row
                         value={inputChoice}
                         onChange={handleInputSelection}
@@ -245,7 +223,7 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
                             variant="contained"
                             disableElevation
                             color="secondary"
-                            onClick={callMethod}
+                            onClick={invokeAction}
                         >
                             Execute
                         </Button>    
@@ -254,7 +232,7 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
                             variant="contained"
                             disableElevation
                             color="secondary"
-                            // onClick={cancelMethod}
+                            // onClick={cancelAction}
                         >
                             Cancel
                         </Button>    
@@ -276,19 +254,19 @@ export const MethodExecutionClient = (props : MethodExecutionProps) => {
 
 
 
-type MethodInputChoiceProps = { 
+type ActionInputChoiceProps = { 
     choice : string, 
     signature : Array<string>,
     setValue : any
     value : any 
 }
 
-export const MethodInputChoice = (props : MethodInputChoiceProps) => {
+export const ActionInputChoice = (props : ActionInputChoiceProps) => {
     const theme = useTheme()
     switch(props.choice) {
         case 'JSON' : return <Box id="ace-editor-box" sx={{display : 'flex', flexGrow : 1}}>
                                 <AceEditor
-                                    name="methods-client-json-input"
+                                    name="actions-client-json-input"
                                     placeholder="Enter keyword as JSON and non-keywords under a 'args' field as a list. 
                                     for ex - { 'args' : [1, 'foo'], 'my_kw_arg1' : false, 'my_kw_arg2' : [1, 2, 3] }.
                                     This is equivalent to self.my_func(1, 'foo', my_kw_arg1=my_kw_arg1, my_kw_arg2=my_kw_arg2)."
@@ -333,43 +311,4 @@ export const MethodInputChoice = (props : MethodInputChoiceProps) => {
                             sx={{ flexGrow: 1, display : 'flex' }}
                         />
     }
-}
-
-
-
-export const MethodDocViewer = (props : any) => {
-
-    const clientState = useContext(ThingManager) as Thing
-
-    return (
-        <Stack id="method-doc-viewer-table-layout" sx = {{ pl : 3, pr : 3, pt : 2, pb : 2, flexGrow : 1}}>
-            <UnstyledTable
-                rows={[
-                    { id   : "DOC",
-                    name : <DocRowTitle>DOC</DocRowTitle>, 
-                    info : props.method.doc },
-                    { id   : "URL",
-                    name : <DocRowTitle>URL</DocRowTitle>, 
-                    info : <Link 
-                                onClick={() => window.open(clientState.domain + props.method.fullpath)} 
-                                sx={{display : 'flex', alignItems : "center", cursor:'pointer', fontSize : 14,
-                                        color : "#0000EE" }}
-                                underline="hover"
-                                variant="caption"
-                            >
-                                {clientState.domain + props.method.fullpath}
-                            </Link>
-                    },
-                    { id : "STATE" , name : <DocRowTitle>STATE</DocRowTitle>, info : props.method.state},
-                    { id : "HTTP METHOD" , name : <DocRowTitle>HTTP Method</DocRowTitle>, 
-                    info : props.method.remote_info.http_method },
-                    { id : "Keyword Defaults", name : <DocRowTitle>Keyword Defaults</DocRowTitle>, 
-                    info : props.method.kwdefaults },
-                    { id : "Defaults", name : <DocRowTitle>Defaults</DocRowTitle>, 
-                    info : props.method.defaults },
-                ]}
-                tree={"method-doc-viewer-table-"+props.method.name+"-"}            
-            />
-        </Stack>
-    )
 }

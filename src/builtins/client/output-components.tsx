@@ -17,15 +17,10 @@ import { LogTable, LogDataType, useRemoteObjectLogColumns } from "../log-viewer/
 import { asyncRequest } from "@hololinked/mobx-render-engine/utils/http";
 import { ErrorViewer } from "../reuse-components";
 import NewWindow from "react-new-window";
-import { defaultAppSettings } from "../app-settings";
-import { ThingManager } from "./view";
+import { PageContext, PageProps, ThingManager } from "./view";
 import { Thing } from "./state";
 
 
-
-type UndockableConsoleProps = { 
-    clientState : Thing
-}
 
 export const allowedConsoleFontSizes = ["6", "8", "10", "12", "14", "16", "18", "20", "22", "24", "26", "28", "30"]
 export const allowedConsoleWindowSizes = ["100", "200", "300", "400", "500", "700", "1000", "2000", "5000", "10000"]
@@ -33,14 +28,15 @@ export const allowedConsoleMaxEntries  = ["5", "10", "15", "20", "25", "50", "10
 
 export const UndockableConsole = observer(() => {
 
-    const clientState = useContext(ThingManager) as Thing
+    const thing = useContext(ThingManager) as Thing
+    const { settings } = useContext(PageContext) as PageProps
 
     const [consoleOutputFontSize, setConsoleOutputFontSize] = useState<string>
-                    (defaultAppSettings.console.defaultFontSize.toString())
+                    (settings.console.defaultFontSize.toString())
     const [consoleWindowSize, setConsoleWindowSize] = useState<string>
-                    (defaultAppSettings.console.defaultWindowSize.toString())
+                    (settings.console.defaultWindowSize.toString())
     const [consoleMaxEntries, setConsoleMaxEntries] = useState<string>
-                    (defaultAppSettings.console.defaultMaxEntries.toString())
+                    (settings.console.defaultMaxEntries.toString())
     // return values from python server side
     const [consoleEntries, setConsoleEntries] = useState([])
     const [undock, setUndock] = useState<boolean>(false)
@@ -58,21 +54,21 @@ export const UndockableConsole = observer(() => {
     }, [])
 
     const handleStringify = useCallback((event: any) => {
-        clientState.setStringifyOutput(event.target.checked);
-    }, [])
+        settings.console.stringifyOutput = event.target.checked;
+    }, [settings])
 
     const clearOutput = useCallback(()=> {
-        clientState.resetError()
+        thing.resetError()
         setConsoleEntries([])
     }, [])
 
     const openLastResponseInNewTab = useCallback(() => {
-        openJSONinNewTab(clientState.lastResponse, `Last Response`)
+        openJSONinNewTab(thing.lastResponse, `Last Response`)
     }, [])
     
     const downloadLastResponse = useCallback(() => {
-        clientState.lastResponse? 
-            downloadJSON(clientState.lastResponse, 'last-response.json') : 
+        thing.lastResponse? 
+            downloadJSON(thing.lastResponse, 'last-response.json') : 
             console.log("no valid response to download")  
     }, [])
 
@@ -177,7 +173,7 @@ export const UndockableConsole = observer(() => {
                     <Checkbox
                         id='console-window-stringify-output-checkbox'
                         size="medium"
-                        checked={clientState.stringifyOutput}
+                        checked={settings.console.stringifyOutput}
                         onChange={handleStringify}
                         sx={{ borderRadius : 0 }}
                     />
@@ -193,7 +189,7 @@ export const UndockableConsole = observer(() => {
                         sx={{ width : 80 }}
                         onChange={handleFontSizeChange}
                     >
-                        {allowedConsoleFontSizes.map((value : string, index : number) => 
+                        {allowedConsoleFontSizes.map((value : string) => 
                             <MenuItem key={"console-window-font-size-selector-"+value} value={value}>{value}</MenuItem>)}
                     </Select>
                 </FormControl>
@@ -208,7 +204,7 @@ export const UndockableConsole = observer(() => {
                         sx={{ width : 80 }}
                         onChange={handleWindowSizeChange}
                     >
-                        {allowedConsoleWindowSizes.map((value : string, index : number) => 
+                        {allowedConsoleWindowSizes.map((value : string) => 
                             <MenuItem key={"console-window-size-selector-"+value} value={value}>{value}</MenuItem>)}
                     </Select>
                 </FormControl>
@@ -223,7 +219,7 @@ export const UndockableConsole = observer(() => {
                         sx={{ width : 80 }}
                         onChange={handleMaxEntries}
                     >
-                        {allowedConsoleMaxEntries.map((value : string, index : number) => 
+                        {allowedConsoleMaxEntries.map((value : string) => 
                             <MenuItem key={"console-window-max-entries-selector"+value} value={value}>{value}</MenuItem>)}
                     </Select>
                 </FormControl>
@@ -296,17 +292,18 @@ export const allowedLogIntervals=['1', '2', '3', '5', '7', '10', '15', '20', '30
 
 export const LiveLogViewer = () => {
 
-    const clientState = useContext(ThingManager) as Thing
-
+    const thing = useContext(ThingManager) as Thing
+    
+    const { settings } = useContext(PageContext) as PageProps
     const [eventSrc, setEventSrc] = useState<EventSource | null>(null)
     const [docked, setDocked] = useState<boolean>(true)
 
     const [logWindowSize, setLogWindowSize] = useState<string>
-            (defaultAppSettings.logViewer.defaultWindowSize.toString())
+            (settings.logViewer.defaultWindowSize.toString())
     const [logOutputFontSize, setLogOutputFontSize] = useState<string>
-            (defaultAppSettings.logViewer.defaultFontSize.toString())
+            (settings.logViewer.defaultFontSize.toString())
     const [logInterval, setLogInterval] = useState<string>
-            (defaultAppSettings.logViewer.defaultInterval.toString())            
+            (settings.logViewer.defaultInterval.toString())            
     
     
     const [rowData, setRowData] = useState<LogDataType[] | null>([])
@@ -315,7 +312,7 @@ export const LiveLogViewer = () => {
     
     // return values from python server side
     useEffect(() => {
-        clientState.setLastResponse(null) 
+        thing.setLastResponse(null) 
     }, [])
 
     const handleFontSizeChange = useCallback((event: any) => {
@@ -341,42 +338,41 @@ export const LiveLogViewer = () => {
     const fetchLogs = useCallback(async() => {
         try {
             const response = await asyncRequest({
-                url : clientState.remoteObjectInfo.logEventsPusherURL, 
+                url : thing.logEventsPusherURL, 
                 method : 'post',
-                baseURL : clientState.domain, 
                 data : {
                     interval : Number(logInterval)
                 }
             }) as AxiosResponse
             if(response.status !== 200 && response.status !== undefined) {
                 if(response.data.exception) 
-                    clientState.setError(response.data.exception.message, response.data.exception.traceback)
+                    thing.setError(response.data.exception.message, response.data.exception.traceback)
                 else 
-                    clientState.setError(`could not fetch log events - response code ${response.status}`)
+                    thing.setError(`could not fetch log events - response code ${response.status}`)
                 console.log(response)
                 console.log("could not fetch log events")
                 return
             }
         } catch(error : any) {
-            clientState.setError(`could not fetch log events ${error.message}`)
+            thing.setError(`could not fetch log events ${error.message}`)
             console.log(error)
             console.log("could not fetch log events")
             return 
         }
 
-        let eventSrcURL : string | null = clientState.remoteObjectInfo.logEventsURL 
+        let eventSrcURL : string | null = thing.logEventsURL 
         if (!eventSrcURL) {
             console.log(`could not find a valid log-event source. make sure you have a logger 
             with scadapy.server.remote_object.RemoteAccessHandler (or its subclass) attached to it emitting events named 'log-events'.`)
             return 
         }
-        const logEventSrc = new EventSource(clientState.domain + eventSrcURL)
-        logEventSrc.onopen = (ev) => console.debug(`connected to log-events at ${clientState.domain+eventSrcURL}`)
+        const logEventSrc = new EventSource(eventSrcURL)
+        logEventSrc.onopen = (ev) => console.debug(`connected to log-events at ${eventSrcURL}`)
         logEventSrc.onerror = (ev) => console.debug(`error while fetching events from event source ${ev}`)
         logEventSrc.onmessage = (ev) => updateLogs(JSON.parse(ev.data))
         // clear old logs if any set using lastResponse
         setEventSrc(logEventSrc)
-    }, [clientState, logInterval])
+    }, [thing, logInterval])
 
     const stopLogEventSrc = useCallback(() => {
         const cleanup = async() => {
@@ -385,21 +381,20 @@ export const LiveLogViewer = () => {
                 setEventSrc(null)
                 try {
                     const response = await asyncRequest({
-                        url : clientState.remoteObjectInfo.logEventsStopURL, 
-                        method : 'post',
-                        baseURL : clientState.domain, 
+                        url : thing.logEventsStopURL, 
+                        method : 'post'
                     }) as AxiosResponse
                     if(response.status !== 200 && response.status !== undefined) {
                         if(response.data.exception) 
-                            clientState.setError(response.data.exception.message, response.data.exception.traceback)
+                            thing.setError(response.data.exception.message, response.data.exception.traceback)
                         else 
-                            clientState.setError(`could not stop log events - response code ${response.status}`)
+                            thing.setError(`could not stop log events - response code ${response.status}`)
                         console.log(response)
                         console.log("could not stop log events")
                         return
                     }
                 } catch(error : any) {
-                    clientState.setError(`could not stop log events ${error.message}`)
+                    thing.setError(`could not stop log events ${error.message}`)
                     console.log(error)
                     console.log("could not stop log events")
                     return 
@@ -419,7 +414,7 @@ export const LiveLogViewer = () => {
     }, [])
 
     return (
-        <Stack sx={{ display : 'flex', flexGrow : 1, pt : 1 }}>
+        <Stack sx={{ display : 'flex', flexGrow : 1, pt : 1, pl : settings.tabOrientation === 'vertical' ?  2 : null }}>
             <Stack direction="row" sx={{pt : 2}}>
                 <Box>
                     {docked? 
@@ -474,7 +469,7 @@ export const LiveLogViewer = () => {
                         sx={{ width:80 }}
                         onChange={handleIntervalChange}
                     >
-                        {allowedLogIntervals.map((value : string, index : number) => 
+                        {allowedLogIntervals.map((value : string) => 
                             <MenuItem key={"log-window-size-selector-"+value} value={value}>{value}</MenuItem>)}
                     </Select>
                 </FormControl>
@@ -489,7 +484,7 @@ export const LiveLogViewer = () => {
                         sx={{ width:80 }}
                         onChange={handleFontSizeChange}
                     >
-                        {allowedConsoleFontSizes.map((value : string, index : number) => 
+                        {allowedConsoleFontSizes.map((value : string) => 
                             <MenuItem key={"log-window-font-size-selector-"+value} value={value}>{value}</MenuItem>)}
                     </Select>
                 </FormControl>
@@ -504,7 +499,7 @@ export const LiveLogViewer = () => {
                         sx={{ width:80 }}
                         onChange={handleWindowSizeChange}
                     >
-                        {allowedConsoleWindowSizes.map((value : string, index : number) => 
+                        {allowedConsoleWindowSizes.map((value : string) => 
                             <MenuItem key={"log-window-size-selector-"+value} value={value}>{value}</MenuItem>)}
                     </Select>
                 </FormControl>
@@ -520,8 +515,8 @@ export const LiveLogViewer = () => {
                     />
                 </Box> :
                 <NewWindow
-                    title={`${clientState.remoteObjectInfo.instance_name}-log-viewer`}
-                    name={`${clientState.remoteObjectInfo.instance_name}-log-viewer`}
+                    title={`${thing.td.id}-log-viewer`}
+                    name={`${thing.td.id}-log-viewer`}
                 >
                     <Box sx={{ display : 'flex', flexGrow : 1, p : 5 }}>
                         <LogTable
@@ -541,10 +536,10 @@ export const LiveLogViewer = () => {
 
 export const ResponseLogs = observer(() => {
 
-    const clientState = useContext(ThingManager) as Thing
+    const thing = useContext(ThingManager) as Thing
 
-    const logs = clientState.lastResponse? clientState.lastResponse.data? 
-                clientState.lastResponse.data.logs? clientState.lastResponse.data.logs : null : null : null 
+    const logs = thing.lastResponse? thing.lastResponse.data? 
+                thing.lastResponse.data.logs? thing.lastResponse.data.logs : null : null : null 
     const columnDefs = useRemoteObjectLogColumns('16px')
     
     return (
@@ -566,18 +561,18 @@ export const ResponseLogs = observer(() => {
 
 export const ErrorBoundary = observer(() => {
 
-    const clientState = useContext(ThingManager) as Thing
+    const thing = useContext(ThingManager) as Thing
 
     return (
         <Stack id='error-viewer-box-for-padding' sx={{ pt : 1 }}>
-            {clientState.errorMessage? 
+            {thing.errorMessage? 
                 <Divider id="client-output-console-title">
                     <Typography variant="button" color="GrayText">DETAILED ERRORS</Typography>
                 </Divider> : null
             }
             <ErrorViewer 
-                errorMessage={clientState.errorMessage} 
-                errorTraceback={clientState.errorTraceback}
+                errorMessage={thing.errorMessage} 
+                errorTraceback={thing.errorTraceback}
             />
         </Stack>     
     )
