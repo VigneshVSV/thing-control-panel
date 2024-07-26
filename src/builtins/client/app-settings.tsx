@@ -10,19 +10,19 @@ import { Grid, Typography, FormControlLabel, Switch, Divider, Box,
 import * as IconsMaterial from '@mui/icons-material';
 // Custom component libraries 
 
-import { stringToObject } from "./utils";
+import { stringToObject } from "../utils";
 import { toJS } from "mobx";
 import { allowedConsoleFontSizes, allowedConsoleMaxEntries, allowedConsoleWindowSizes, 
-        allowedLogIntervals } from "./client/output-components";
-
+        allowedLogIntervals } from "./output-components";
+import { PageContext, PageProps } from "./view";
 
 
 
 type SettingsProps = {
-    updateSetting : (URL : string, settingName : string, value : any, event : React.BaseSyntheticEvent | any) => Promise<void>
+    updateSettingsInStorage : (URL : string, settingName : string, value : any, event : React.BaseSyntheticEvent | any) => Promise<void>
 }
 
-const SettingsContext = createContext<SettingsProps | null>(null)
+const SettingsUpdateContext = createContext<SettingsProps | null>(null)
   
 
 type SettingRowProps = {
@@ -66,7 +66,7 @@ export const SettingRow = ( {title, description, children} : SettingRowProps) =>
 const EditableTextSetting = observer(({ settingName, settingURL, initialValue, placeHolder } : 
     { settingName : string, settingURL : string, initialValue : string, placeHolder : string}) => {
 
-    const { updateSetting } = useContext(SettingsContext) as SettingsProps
+    const { updateSettingsInStorage } = useContext(SettingsUpdateContext) as SettingsProps
 
     const [edit, setEdit] = useState<boolean>(false)
     const [value, setValue] = useState<string>(initialValue)
@@ -90,7 +90,7 @@ const EditableTextSetting = observer(({ settingName, settingURL, initialValue, p
                         <IconButton 
                             sx={{bgcolor : '#808080', borderRadius : 0 }}
                             onClick={async () =>  {
-                                await updateSetting(settingURL, settingName, value, null)
+                                await updateSettingsInStorage(settingURL, settingName, value, null)
                                 setEdit(!edit)
                             }}
                         >
@@ -114,7 +114,7 @@ const EditableTextSetting = observer(({ settingName, settingURL, initialValue, p
 const BooleanSwitchSetting = observer(({ label, initialValue, settingName, settingURL } : 
     { label : string, initialValue : boolean, settingName : string, settingURL : string }) => {
 
-    const { updateSetting } = useContext(SettingsContext) as SettingsProps
+    const { updateSettingsInStorage } = useContext(SettingsUpdateContext) as SettingsProps
     const [checked, setChecked] = useState<boolean>(initialValue)
 
     useEffect(() =>
@@ -129,7 +129,7 @@ const BooleanSwitchSetting = observer(({ label, initialValue, settingName, setti
                 <Switch 
                     checked={checked} 
                     onChange={async (event: React.ChangeEvent<HTMLInputElement>) => 
-                        await updateSetting(settingURL, settingName, event.target.checked, event)
+                        await updateSettingsInStorage(settingURL, settingName, event.target.checked, event)
                     }
                 />
             } 
@@ -142,9 +142,9 @@ const BooleanSwitchSetting = observer(({ label, initialValue, settingName, setti
 const BooleanCheckboxSetting = observer(({ label, initialValue, settingName, settingURL } : 
     { label : string, initialValue : boolean, settingName : string, settingURL : string }) => {
 
-    const { updateSetting } = useContext(SettingsContext) as SettingsProps
+    const { updateSettingsInStorage } = useContext(SettingsUpdateContext) as SettingsProps
     const [checked, setChecked] = useState<boolean>(initialValue)
-
+   
     useEffect(() =>
         setChecked(initialValue)
     , [initialValue])
@@ -157,7 +157,7 @@ const BooleanCheckboxSetting = observer(({ label, initialValue, settingName, set
                 <Checkbox
                     checked={checked} 
                     onChange={async (event: React.ChangeEvent<HTMLInputElement>) => 
-                        await updateSetting(settingURL, settingName, event.target.checked, event)
+                        await updateSettingsInStorage(settingURL, settingName, event.target.checked, event)
                     }
                 />
             } 
@@ -170,7 +170,7 @@ const BooleanCheckboxSetting = observer(({ label, initialValue, settingName, set
 const SelectSetting = observer(( { label, initialValue, allowedValues, settingName, settingURL } : 
     { label : string, initialValue : any, allowedValues : any[], settingName : string, settingURL : string}) => {
     
-    const { updateSetting } = useContext(SettingsContext) as SettingsProps
+    const { updateSettingsInStorage } = useContext(SettingsUpdateContext) as SettingsProps
     const [value, setValue] = useState(initialValue)
 
     useEffect(() => {
@@ -181,7 +181,7 @@ const SelectSetting = observer(( { label, initialValue, allowedValues, settingNa
     // mostly useState and useEffect is not necessary - can be removed someday
 
     const handleChange = useCallback(async(event : SelectChangeEvent) => {
-        await updateSetting(settingURL, settingName, event.target.value, event)
+        await updateSettingsInStorage(settingURL, settingName, event.target.value, event)
     }, [settingName, settingURL])
 
     return (
@@ -193,7 +193,7 @@ const SelectSetting = observer(( { label, initialValue, allowedValues, settingNa
                 value={value}
                 size="small"
                 variant="standard"
-                sx={{ width : 100 }}
+                sx={{ width : 120 }}
                 onChange={handleChange}
             >
                 {allowedValues.map((value : string, index : number) => 
@@ -207,19 +207,16 @@ const SelectSetting = observer(( { label, initialValue, allowedValues, settingNa
 
 export const LoginPageSettings = observer(() => {
 
-    const { globalState } = useContext(AppContext) as AppProps
+    const { settings } = useContext(PageContext) as PageProps
  
     return (
-        <SettingRow
-            title='Login Page'
-            description=''
-        >
+        <Box sx={{p : 1, pl : 10 }}>
             <Grid container direction='column' spacing={3}>
                 <Grid item>
                     <BooleanSwitchSetting
                         settingName="login.displayFooter"
                         settingURL="/login"
-                        initialValue={globalState.appsettings.login.displayFooter} 
+                        initialValue={settings.login.displayFooter} 
                         label="show footer label at login"
                     />
                    
@@ -228,7 +225,7 @@ export const LoginPageSettings = observer(() => {
                     <EditableTextSetting 
                         settingName="login.footer"
                         settingURL="/login"
-                        initialValue={globalState.appsettings.login.footer} 
+                        initialValue={settings.login.footer} 
                         placeHolder="login footer display name"
                     />
                 </Grid>
@@ -236,60 +233,57 @@ export const LoginPageSettings = observer(() => {
                     <EditableTextSetting 
                         settingName="login.footerLink"
                         settingURL="/login"
-                        initialValue={globalState.appsettings.login.footerLink}
+                        initialValue={settings.login.footerLink}
                         placeHolder="login footer link" 
                     />
                 </Grid>
             </Grid>
-        </SettingRow>            
+        </Box>            
     )
 })
 
 
 
-const RemoteObjectViewerSettings = observer(() => {
+const ThingViewerSettings = () => {
 
-    const { globalState } = useContext(AppContext) as AppProps
-
+    const { settings } = useContext(PageContext) as PageProps
+    
     return (
-        <SettingRow
-            title="Remote Object Viewer"
-            description="Default Settings for Remote Object Viewer in RemoteObject Wizard"
-        >
+        <Box sx={{p : 1, pl : 10 }}>
             <Typography variant="button">Console</Typography>
             <Grid container direction='row' id="remote-object-viewer-console-settings">
                 <Grid item>
                     <BooleanCheckboxSetting
-                        settingName="remoteObjectViewer.console.stringifyOutput"
+                        settingName="console.stringifyOutput"
                         settingURL="/remote-object-viewer"
-                        initialValue={globalState.appsettings.remoteObjectViewer.console.stringifyOutput}
+                        initialValue={settings.console.stringifyOutput}
                         label="stringify output"
                     />
                 </Grid>
                 <Grid item sx={{ pl : 2 }}>
                     <SelectSetting 
-                        settingName="remoteObjectViewer.console.defaultFontSize"
+                        settingName="console.defaultFontSize"
                         settingURL="/remote-object-viewer"
                         label="Font Size"
-                        initialValue={globalState.appsettings.remoteObjectViewer.console.defaultFontSize}
+                        initialValue={settings.console.defaultFontSize}
                         allowedValues={allowedConsoleFontSizes}
                     />
                 </Grid>
                 <Grid item sx={{ pl : 2 }}>
                     <SelectSetting 
-                        settingName="remoteObjectViewer.console.defaultWindowSize"
+                        settingName="console.defaultWindowSize"
                         settingURL="/remote-object-viewer"
                         label="Window Size"
-                        initialValue={globalState.appsettings.remoteObjectViewer.console.defaultWindowSize}
+                        initialValue={settings.console.defaultWindowSize}
                         allowedValues={allowedConsoleWindowSizes}
                     />
                 </Grid>
                 <Grid item sx={{ pl : 2 }}>
                     <SelectSetting 
-                        settingName="remoteObjectViewer.console.defaultMaxEntries"
+                        settingName="console.defaultMaxEntries"
                         settingURL="/remote-object-viewer"
                         label="Max Entries"
-                        initialValue={globalState.appsettings.remoteObjectViewer.console.defaultMaxEntries}
+                        initialValue={settings.console.defaultMaxEntries}
                         allowedValues={allowedConsoleMaxEntries}
                     />
                 </Grid> 
@@ -299,122 +293,143 @@ const RemoteObjectViewerSettings = observer(() => {
             <Grid container direction='row' id="remote-object-viewer-log-viewer-settings" sx={{pt : 2}}>
                 <Grid item>
                     <SelectSetting 
-                        settingName="remoteObjectViewer.logViewer.defaultFontSize"
+                        settingName="settings.defaultFontSize"
                         settingURL="/remote-object-viewer"
                         label="Font Size"
-                        initialValue={globalState.appsettings.remoteObjectViewer.logViewer.defaultFontSize}
+                        initialValue={settings.logViewer.defaultFontSize}
                         allowedValues={allowedConsoleFontSizes}
                     />
                 </Grid>
                 <Grid item sx={{ pl : 2 }}>
                     <SelectSetting 
-                        settingName="remoteObjectViewer.logViewer.defaultWindowSize"
+                        settingName="settings.defaultWindowSize"
                         settingURL="/remote-object-viewer"
                         label="Window Size"
-                        initialValue={globalState.appsettings.remoteObjectViewer.logViewer.defaultWindowSize}
+                        initialValue={settings.logViewer.defaultWindowSize}
                         allowedValues={allowedConsoleWindowSizes}
                     />
                 </Grid>
                 <Grid item sx={{ pl : 2 }}>
                     <SelectSetting
-                        settingName="remoteObjectViewer.logViewer.defaultInterval"
+                        settingName="settings.defaultInterval"
                         settingURL="/remote-object-viewer"
                         label="Interval"
-                        initialValue={globalState.appsettings.remoteObjectViewer.logViewer.defaultInterval}
+                        initialValue={settings.logViewer.defaultInterval}
                         allowedValues={allowedLogIntervals}
                     />
                 </Grid> 
                 <Grid item sx={{ pl : 2 }}>
                     <SelectSetting
-                        settingName="remoteObjectViewer.logViewer.defaultMaxEntries"
+                        settingName="settings.defaultMaxEntries"
                         settingURL="/remote-object-viewer"
                         label="Max Entries"
-                        initialValue={globalState.appsettings.remoteObjectViewer.logViewer.defaultMaxEntries}
-                        allowedValues={allowedConsoleWindowSizes}
+                        initialValue={settings.logViewer.defaultMaxEntries}
+                        allowedValues={allowedConsoleMaxEntries}
                     />
                 </Grid> 
             </Grid>
-        </SettingRow>
+        </Box>        
     )
-})
+}
 
 
 
-const OtherSettings = observer(() => {
+const OtherSettings = () => {
     
-    const { globalState } = useContext(AppContext) as AppProps
+    const { settings } = useContext(PageContext) as PageProps
 
     return (
-        <SettingRow
-            title="Other Settings"
-            description=""
-        >
+        <Box sx={{ pl : 10 }}>
             <Grid container direction='column' id="dashboards-settings">
-                <Grid item>
-                    <BooleanSwitchSetting
-                        settingName="dashboards.use"
-                        settingURL="/dashboards"
-                        initialValue={globalState.appsettings.dashboards.use}
-                        label="use experimental dashboard renderer"
+                <Grid item sx={{ pt : 2 }}>
+                    <SelectSetting
+                        settingName="tabOrientation"
+                        settingURL="/thing-viewer"
+                        initialValue={settings.tabOrientation}
+                        label="tab orientation"
+                        allowedValues={["horizontal", "vertical"]}
                     />
                 </Grid>
-                <Grid item>
+                <Grid item sx={{pt : 2}}>
                     <BooleanSwitchSetting 
-                        settingName="servers.allowHTTP"
-                        settingURL="/servers"
-                        label="Allow HTTP for Python Servers (no encryption of messages or object specific credentials)"
-                        initialValue={globalState.appsettings.servers.allowHTTP}
+                        settingName="updateLocalStorage"
+                        settingURL="/thing-viewer"
+                        label="Auto save changes"
+                        initialValue={settings.updateLocalStorage}
                     />
                 </Grid>
-                <Grid item>
+                {/* <Grid item>
                     <BooleanSwitchSetting 
                         settingName="others.WOTTerminology"
                         settingURL="/others"
                         label="Use Web of Things terminology"
                         initialValue={globalState.appsettings.others.WOTTerminology}
                     />
-                </Grid>
+                </Grid> */}
             </Grid>
-        </SettingRow>
+        </Box>
     )
-})
+}
 
 
+const updateNestedSetting = (obj: any, keys: string[], value: any) => {
+    const key = keys.shift();
+    if (key && keys.length > 0) {
+        if (!obj[key]) {
+            obj[key] = {};
+        }
+        updateNestedSetting(obj[key], keys, value);
+    } else if (key) {
+        obj[key] = value;
+    }
+};
 
-export const AppSettings = observer(() => {
 
-    const { globalState } = useContext(AppContext) as AppProps
+export const AppSettings = ( { globalState } : { globalState : any }) => {
 
-    const updateSetting = useCallback(async(URL : string, settingName : string, value : any, 
+    const { settings, updateSettings, updateLocalStorage } = useContext(PageContext) as PageProps
+
+    const updateSettingsInStorage = useCallback(async(URL : string, settingName : string, value : any, 
                                                 event : React.BaseSyntheticEvent | any) => {
+            
         if(event)
             event.preventDefault()
-        try {
-            const response = await axios.patch(
-                `${globalState.primaryHostServer}/app-settings${URL}`, 
-                stringToObject(settingName.split('.').slice(1).join('.'), value, {}), 
-                { withCredentials : true }
-            )
-            if(response.status === 200) 
-                globalState.updateSetting(settingName, value)
-            console.log("app setting updated", toJS(globalState.appsettings))
-        } catch (error) {
-            
+        if (globalState) {
+            try {   
+                const response = await axios.patch(
+                                `${globalState.primaryHostServer}/app-settings${URL}`, 
+                                stringToObject(settingName.split('.').slice(1).join('.'), value, {}), 
+                                { withCredentials : true }
+                            )
+                if(response.status === 200) 
+                    globalState.updateSetting(settingName, value)
+                console.log("app setting updated", toJS(settings))
+            } catch (error) {
+
+            }
         }
-    }, [globalState])
+        else {
+            const settingKeys = settingName.split('.');
+            updateNestedSetting(settings, settingKeys, value);
+            updateSettings(JSON.parse(JSON.stringify(settings)))
+            updateLocalStorage(settings)
+        }
+    }, [globalState, settings, updateSettings, updateLocalStorage])
 
     useEffect(() => {
         const fetchSettings = async() => {
-            try {
-                const response = await axios.get(
-                    `${globalState.primaryHostServer}/app-settings`,
-                    { withCredentials : true }
-                )
-                if(response.status === 200) 
-                    globalState.updateSettings(response.data)
-                console.log("app setting loaded", toJS(globalState.appsettings))
-            } catch(error :  any) {
-
+            if(globalState) {
+                try {
+                    const response = await axios.get(
+                        `${globalState.primaryHostServer}/app-settings`,
+                        { withCredentials : true }
+                    )
+                    if(response.status === 200) 
+                        globalState.updateSettings(response.data)
+                    console.log("app setting loaded", toJS(settings))
+                } catch(error :  any) {
+                    
+                }
             }
         }
         fetchSettings()
@@ -422,14 +437,15 @@ export const AppSettings = observer(() => {
 
     return (
         <Grid container direction = 'column' sx={{ flexWrap: 'nowrap' }}>
-            <SettingsContext.Provider value={{ updateSetting : updateSetting }}>
-                <RemoteObjectViewerSettings />
-                <LoginPageSettings />
+            <SettingsUpdateContext.Provider value={{ updateSettingsInStorage }}>
+                <ThingViewerSettings />
                 <OtherSettings />
-            </SettingsContext.Provider>
+                {/* <LoginPageSettings />  */}
+                
+            </SettingsUpdateContext.Provider>
         </Grid>
     )
-})
+}
 
 
 /*
@@ -489,8 +505,15 @@ title = 'Main Server'
 
 
 
-export type ClientSettings = {
-    tabOrientation : "horizontal" | "vertical"
+export type ClientSettingsType = {
+    tabOrientation : "horizontal" | "vertical",
+    updateLocalStorage : boolean,
+    windowZoom : number,
+    login : {
+        displayFooter : boolean
+        footer : string
+        footerLink : string
+    }
     console : {
         stringifyOutput : boolean 
         defaultMaxEntries : number 
@@ -505,8 +528,15 @@ export type ClientSettings = {
     }
 }
 
-export const defaultClientSettings : ClientSettings = {
+export const defaultClientSettings : ClientSettingsType = {
     tabOrientation : 'vertical',
+    updateLocalStorage : false,
+    windowZoom : 100,
+    login : {
+        displayFooter : true,
+        footer : "",
+        footerLink : ""
+    },
     console : {
         stringifyOutput : false,
         defaultMaxEntries : 10,

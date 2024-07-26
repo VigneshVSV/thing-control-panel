@@ -25,3 +25,11 @@ const App = () => {
 
 
 export default App
+
+
+/* 
+log viewer
+db viewer
+responsiveness
+electron
+*/

@@ -1,21 +1,15 @@
 // Internal & 3rd party functional libraries
+import axios, { AxiosResponse } from 'axios';
+import { makeObservable, observable, action } from 'mobx';
 // Custom functional libraries
 // Internal & 3rd party component libraries
 // Custom component libraries 
+import '../../lib/wot-bundle.min.js';
 
 // This file mostly follows python naming conventions - PEP8 - because this information is loaded from 
 // python side
-// Internal & 3rd party functional libraries
-import { makeObservable, observable, action } from 'mobx';
-import axios, { AxiosResponse } from 'axios';
-import '../../lib/wot-bundle.min.js';
-// Custom functional libraries
 
-// Internal & 3rd party component libraries
-// Custom component libraries 
-
-
-export type RemoteObjectInfo = {
+export type ThingInfo = {
     id : string
     description : string
     properties : { [key : string] : any }
@@ -30,6 +24,7 @@ export class ResourceInformation {
 
     title : string
     description : string
+    forms : Array<{ [key : string] : string }>
     // our own
     name : string
     type : string
@@ -41,6 +36,7 @@ export class ResourceInformation {
         this.name = name
         this.type = ''
         this._state = ''
+        this.forms = []
     }
 
     get doc() : string {
@@ -72,7 +68,6 @@ export class ResourceInformation {
 }
 
 
-
 export class PropertyInformation extends ResourceInformation {
 
     constant : boolean
@@ -88,6 +83,7 @@ export class PropertyInformation extends ResourceInformation {
     deepcopy_default : boolean
     per_instance_descriptor : boolean
     metadata : any
+    python_type : string
     
     constructor(data: Partial<PropertyInformation>, name: string = '') {
         super(data, name);
@@ -103,6 +99,7 @@ export class PropertyInformation extends ResourceInformation {
         this.deepcopy_default = false;
         this.per_instance_descriptor = false;
         this.metadata = null;
+        this.python_type = ''
         this.updateFromJSON(data);
     }
 
@@ -147,30 +144,28 @@ export class PropertyInformation extends ResourceInformation {
     }
 }
 
+
 export class ActionInformation extends ResourceInformation {
     kwdefaults : any
     defaults : any
     signature : Array<string> 
-    forms : Array<{ [key : string] : string }>
-
+   
     constructor(data: Partial<ActionInformation>, name: string = '') {
         super(data, name);
         this.kwdefaults = null;
         this.defaults = null;
         this.signature = [];
-        this.forms = [];
         this.updateFromJSON(data);
     }
 }
 
+
 export class EventInformation extends ResourceInformation {
 
-    forms : Array<{ [key : string] : string }>
     data : any
 
     constructor(data: Partial<EventInformation>, name: string = '') {
         super(data, name);
-        this.forms = [];
         this.data = null;
         this.updateFromJSON(data);
     }
@@ -186,7 +181,7 @@ export class ThingInformation  {
     events : EventInformation[]
     inheritance : string[]
       
-    constructor(info : RemoteObjectInfo) {
+    constructor(info : ThingInfo) {
         this.properties = []
         this.actions = []
         this.events = []
@@ -215,25 +210,23 @@ export const emptyThingInformation = new ThingInformation({
 
 export class Thing {
 
-    // Remote Object Information
+    // Object Information
     info : ThingInformation
     td : any 
     client : any
     servient : Wot.Core.Servient
     wot : Wot.Core.WoT
-    // error displays
     fetchSuccessful : boolean
+    // error displays
     errorMessage :  string
     errorTraceback :  string[] | null 
     hasError : boolean 
-    existingRO_URLs : any
    
     // console output features declared at this level to be used across different tabs
     // last Response to be available as JSON
     lastResponse : { [key : string] : any } | null 
     // event sources to be streamed across tabs 
-    eventSources : any 
-    
+    eventSources : { [key : string] : EventSource | string }
 
     constructor() {
         this.info = emptyThingInformation
@@ -301,7 +294,7 @@ export class Thing {
             }
             else {
                 this.setFetchSuccessful(false)
-                this.setError(`could not load remote object information : response status - ${response.status}`, null) 
+                this.setError(`could not load thing : response status - ${response.status}`, null) 
                 this.setLastResponse(response)
             }
         } catch(error : any) {
@@ -345,13 +338,52 @@ export class Thing {
         this.lastResponse = response 
     }
 
-    addEventSource(URL : string, src : EventSource) {
+    addEventSource(URL : string, src : EventSource | string) {
+        if(this.eventSources[URL]) {
+            if (this.eventSources[URL] instanceof EventSource)
+                console.warn("Event Source already exists for this URL")
+        } 
         this.eventSources[URL] = src
     }
 
     removeEventSource(URL : string){
         if(this.eventSources[URL])
             delete this.eventSources[URL]
+    }
+
+    removeNodeWoTEventSource(name : string) {
+        if (this.client.observedProperties.size > 0 && this.client.observedProperties.get(name).client.activeSubscriptions.size > 0) {
+            for(let [key, value] of this.client.observedProperties.get(name).client.activeSubscriptions.entries()) {
+                if (value.eventSource.hasOwnProperty("_close"))  {
+                    value.eventSource._close()
+                    this.removeEventSource(name)
+                }
+                else if(value.eventSource.hasOwnProperty("close")) {
+                    value.eventSource.close()
+                    this.removeEventSource(name)
+                }
+                else {
+                    console.log("could not close event source")
+                    console.log(value.eventSource)
+                }
+            }
+        }
+    }
+
+    cancelAllEvents() {
+        for (let key of Object.keys(this.eventSources)) {
+            try {
+                if (this.eventSources[key] instanceof EventSource) {
+                    this.eventSources[key].close()
+                    delete this.eventSources[key]
+                    this.removeEventSource(key)
+                }  else {
+                    this.removeNodeWoTEventSource(key)
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
     }
 
     getInteractionAffordances(type : "Properties" | "Actions" | "Events") : { [key : string] : any } {

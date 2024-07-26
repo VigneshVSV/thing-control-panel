@@ -2,11 +2,10 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { AxiosResponse } from "axios";
 // Custom functional libraries
-import { getFormattedTimestamp } from "@hololinked/mobx-render-engine/utils/misc";
-import { asyncRequest } from "@hololinked/mobx-render-engine/utils/http";
+import { getFormattedTimestamp, asyncRequest } from "../utils";
 // Internal & 3rd party component libraries
 import { Stack, Divider, Tabs, Tab, FormControl, FormControlLabel, Button, ButtonGroup, 
-    RadioGroup, Box, Radio, useTheme, TextField, Link, Checkbox } from "@mui/material";
+    RadioGroup, Box, Radio, useTheme, TextField, Checkbox } from "@mui/material";
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-crimson_editor"
@@ -97,7 +96,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
     const thing = useContext(ThingManager) as Thing
     const { settings } = useContext(PageContext) as PageProps
     
-    const [clientChoice, setClientChoice] = useState('node-wot')
+    const [clientChoice, _] = useState('node-wot')
     const [fetchExecutionLogs, setFetchExecutionLogs] = useState<boolean>(false)                                                                                               
     const [inputChoice, setInputChoice ] = useState('JSON')
     const [timeout, setTimeout] = useState<number>(-1)
@@ -108,7 +107,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
     }, [])
 
     useEffect(() => {
-        // setInputChoice(props.parameter.inputType)
+        // setInputChoice(action.inputType)
         return () => setKwargsValue(null)
     }, [action])
     
@@ -128,9 +127,28 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                     fetch_execution_logs : fetchExecutionLogs,
                     timeout : timeout,
                     ...JSON.parse(kwargsValue)
-                    }
+                }
                 _fullpath = fullpath  
             }
+            /* 
+            order -
+            1. perform operation 
+            2. set response
+            3. set console output
+            4. reset error
+
+            In this way
+            1. If there is an error in even doing the operation 
+                1. the last valid response is not unncessarily lost
+                2. update error to new one and ignore console output
+            2. If there is an error in retrieving the value from the response
+                1. update last response
+                2. update error to new one and ignore console output
+            3. If there is no error
+                1. update last response
+                2. update console output
+                3. reset error
+            */
             let consoleOutput
             const requestTime = getFormattedTimestamp()
             const requestTime_ = Date.now()
@@ -141,6 +159,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                     data : data
                     // httpsAgent: new https.Agent({ rejectUnauthorized: false })
                 }) as AxiosResponse
+                thing.setLastResponse(response)
                 if(response.status >= 200 && response.status < 300) {
                     if(response.data) 
                         consoleOutput = response.data
@@ -153,7 +172,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                 else {
                     consoleOutput = response
                 }
-                thing.setLastResponse(response)
+                
             }
             else {
                 let lastResponse = await thing.client.invokeAction(action.name, data)
@@ -195,7 +214,11 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                 setValue={setKwargsValue} 
                 value={kwargsValue}    
             />
-            <Stack id='action-execution-client-options-layout' direction = "row" sx={{ flexGrow: 1, display : 'flex'}}>
+            <Stack 
+                id='action-execution-client-options-layout' 
+                direction="row" 
+                sx={{ flexGrow: 1, display : 'flex'}}
+            >
                 <FormControl sx={{pl : 2, pt : 2}}> 
                     <RadioGroup
                         id="actions-execution-client-input-choice-group"
@@ -218,25 +241,27 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                     />
                 </Box>
                 <Box sx={{pt: 2, flexGrow: 0.01, display : 'flex' }} >
-                    <ButtonGroup>
+                    {/* <ButtonGroup> */}
                         <Button 
                             variant="contained"
                             disableElevation
                             color="secondary"
                             onClick={invokeAction}
+                          
                         >
                             Execute
                         </Button>    
-                        <Divider orientation="vertical" sx={{ backgroundColor : "black" }}></Divider>
-                        <Button 
+                        {/* <Divider orientation="vertical" sx={{ backgroundColor : "black" }}></Divider> */}
+                        {/* <Button 
                             variant="contained"
                             disableElevation
                             color="secondary"
+                            
                             // onClick={cancelAction}
                         >
                             Cancel
-                        </Button>    
-                    </ButtonGroup>
+                        </Button>     */}
+                    {/* </ButtonGroup> */}
                 </Box>                
                 <FormControlLabel
                     label="fetch execution logs"

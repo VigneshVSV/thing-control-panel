@@ -106,6 +106,23 @@ export const fetchFieldFromLocalStorage = (field : string | null, defaultValue :
 }
 
 
+export const useLocalStorage = (field : string, defaultValue : any) => { 
+    let obj = fetchFieldFromLocalStorage(field, defaultValue)
+
+    const updateLocalStorage = useCallback((value: any) => {
+        const lobj = fetchFieldFromLocalStorage(null, {});
+        // console.log("total values in local storage before", lobj)   
+        lobj[field] = value;
+        // localStorage.setItem('thing-control-panel', JSON.stringify(lobj));
+        console.log("total values in local storage after", lobj)   
+    }, [field]);
+
+    return [obj, updateLocalStorage];
+
+
+}
+
+
 export const useAutoCompleteOptionsFromLocalStorage = (field : string) => {
     const [existingData, setExistingData] = useState<{[key : string] : any}>({})
     if(!existingData[field])

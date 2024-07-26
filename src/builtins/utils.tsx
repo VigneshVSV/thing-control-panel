@@ -1,3 +1,5 @@
+import axios, { AxiosRequestConfig } from 'axios';
+
 export function groupElementsByN(arr : Array<any>, chunkSize : number | null) {
     let result = [];
     if(!chunkSize)
@@ -36,4 +38,61 @@ export function getAuthority(value : string) : string {
     let protocol = value.split('//')[0]
     let domain = value.split('/')[2]
     return protocol+'//'+domain
+}
+
+
+export const downloadJSON = (response : any, filename : string) => {
+    let blob = new Blob([JSON.stringify(response, null, 4)], {
+        type : 'application/json'
+    })
+    const fileUrl = URL.createObjectURL(blob);
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.setAttribute('download', filename); // Specify the desired filename
+    document.body.appendChild(link);
+    // Simulate a click on the link to start the download
+    link.click();
+    // Clean up the temporary link element
+    document.body.removeChild(link);
+}
+
+
+export const openJSONinNewTab = (obj_ : any, title : string) => {
+    let tab = window.open( "data:text/json," + encodeURIComponent(obj_), '_blank') as Window
+    tab.document.open();
+    tab.document.write('<html><body><pre>' + JSON.stringify(obj_, null, 4) + '</pre></body></html>');
+    tab.document.title = title 
+    tab.document.close();
+    // tab.focus(); // to finish loading the page
+}
+
+
+function getNumberStringWithWidth(num: Number, width: number) {
+    let str = num.toString()
+    if (width > str.length) return '0'.repeat(width - str.length) + str
+    return str.substring(0, width)
+}
+
+export function getFormattedTimestamp() {
+    const date = new Date()
+    const h   = getNumberStringWithWidth(date.getHours(), 2)
+    const min = getNumberStringWithWidth(date.getMinutes(), 2)
+    const sec = getNumberStringWithWidth(date.getSeconds(), 2)
+    const ms  = getNumberStringWithWidth(date.getMilliseconds(), 3)
+    return `${h}:${min}:${sec}.${ms}`
+}
+
+
+export async function asyncRequest(AxiosObject : AxiosRequestConfig) {          
+    const response = await axios(AxiosObject).then(
+        (response) => {
+            if(AxiosObject.responseType !== 'blob')
+                response.status = response.data.responseStatusCode
+            return response
+        }
+    ).catch((error) => {
+        return {error : error}
+    })
+    return response
 }

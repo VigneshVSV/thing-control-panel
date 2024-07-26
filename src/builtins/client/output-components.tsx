@@ -12,9 +12,8 @@ import CallReceivedTwoToneIcon from '@mui/icons-material/CallReceivedTwoTone';
 import OpenInBrowserTwoToneIcon from '@mui/icons-material/OpenInBrowserTwoTone';
 import { Console, Hook, Unhook } from 'console-feed-optimized'
 // Custom component libraries 
-import { downloadJSON, openJSONinNewTab } from "@hololinked/mobx-render-engine/utils/misc";
+import { downloadJSON, openJSONinNewTab, asyncRequest } from "../utils";
 import { LogTable, LogDataType, useRemoteObjectLogColumns } from "../log-viewer/log-viewer";
-import { asyncRequest } from "@hololinked/mobx-render-engine/utils/http";
 import { ErrorViewer } from "../reuse-components";
 import NewWindow from "react-new-window";
 import { PageContext, PageProps, ThingManager } from "./view";
@@ -29,7 +28,7 @@ export const allowedConsoleMaxEntries  = ["5", "10", "15", "20", "25", "50", "10
 export const UndockableConsole = observer(() => {
 
     const thing = useContext(ThingManager) as Thing
-    const { settings } = useContext(PageContext) as PageProps
+    const { settings, updateLocalStorage } = useContext(PageContext) as PageProps
 
     const [consoleOutputFontSize, setConsoleOutputFontSize] = useState<string>
                     (settings.console.defaultFontSize.toString())
@@ -37,25 +36,43 @@ export const UndockableConsole = observer(() => {
                     (settings.console.defaultWindowSize.toString())
     const [consoleMaxEntries, setConsoleMaxEntries] = useState<string>
                     (settings.console.defaultMaxEntries.toString())
+    const [stringifyOutput, setStringifyOutput] = useState<boolean>
+                    (settings.console.stringifyOutput)
     // return values from python server side
     const [consoleEntries, setConsoleEntries] = useState([])
     const [undock, setUndock] = useState<boolean>(false)
    
     const handleFontSizeChange = useCallback((event: any) => {
         setConsoleOutputFontSize(event.target.value as string);
-    }, [])
+        if(settings.updateLocalStorage) {
+            settings.console.defaultFontSize = event.target.value
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
 
     const handleWindowSizeChange = useCallback((event: any) => {
         setConsoleWindowSize(event.target.value as string);
-    }, [])
+        if(settings.updateLocalStorage) {
+            settings.console.defaultWindowSize = event.target.value
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
     
     const handleMaxEntries = useCallback((event: any) => {
         setConsoleMaxEntries(event.target.value);
-    }, [])
+        if(settings.updateLocalStorage) {
+            settings.console.defaultMaxEntries = event.target.value
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
 
     const handleStringify = useCallback((event: any) => {
-        settings.console.stringifyOutput = event.target.checked;
-    }, [settings])
+        setStringifyOutput(event.target.checked);
+        if(settings.updateLocalStorage) {
+            settings.console.stringifyOutput = event.target.checked
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
 
     const clearOutput = useCallback(()=> {
         thing.resetError()
@@ -173,7 +190,7 @@ export const UndockableConsole = observer(() => {
                     <Checkbox
                         id='console-window-stringify-output-checkbox'
                         size="medium"
-                        checked={settings.console.stringifyOutput}
+                        checked={stringifyOutput}
                         onChange={handleStringify}
                         sx={{ borderRadius : 0 }}
                     />
@@ -294,7 +311,7 @@ export const LiveLogViewer = () => {
 
     const thing = useContext(ThingManager) as Thing
     
-    const { settings } = useContext(PageContext) as PageProps
+    const { settings, updateLocalStorage } = useContext(PageContext) as PageProps
     const [eventSrc, setEventSrc] = useState<EventSource | null>(null)
     const [docked, setDocked] = useState<boolean>(true)
 
@@ -304,7 +321,8 @@ export const LiveLogViewer = () => {
             (settings.logViewer.defaultFontSize.toString())
     const [logInterval, setLogInterval] = useState<string>
             (settings.logViewer.defaultInterval.toString())            
-    
+    const [logMaxEntries, setLogMaxEntries] = useState<string>
+            (settings.logViewer.defaultMaxEntries.toString())
     
     const [rowData, setRowData] = useState<LogDataType[] | null>([])
     const columnDefs = useRemoteObjectLogColumns('16px')
@@ -317,15 +335,35 @@ export const LiveLogViewer = () => {
 
     const handleFontSizeChange = useCallback((event: any) => {
         setLogOutputFontSize(event.target.value as string);
-    }, [])
+        if(settings.updateLocalStorage) {
+            settings.logViewer.defaultFontSize = event.target.value
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
 
     const handleIntervalChange = useCallback((event: any) => {
         setLogInterval(event.target.value as string);
-    }, [])
+        if(settings.updateLocalStorage) {
+            settings.logViewer.defaultInterval = event.target.value
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
 
     const handleWindowSizeChange = useCallback((event: any) => {
         setLogWindowSize(event.target.value as string);
-    }, [])
+        if(settings.updateLocalStorage) {
+            settings.logViewer.defaultWindowSize = event.target.value
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
+
+    const handleMaxEntriesChange = useCallback((event: any) => {
+        setLogMaxEntries(event.target.value as string);
+        if(settings.updateLocalStorage) {
+            settings.logViewer.defaultMaxEntries = event.target.value
+            updateLocalStorage(settings)
+        }
+    }, [settings, updateLocalStorage])
 
     const updateLogs = useCallback((data : LogDataType[]) => {
         // console.log("old row data", rowDataRef.current)

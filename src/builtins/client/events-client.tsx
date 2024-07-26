@@ -22,11 +22,10 @@ export const SelectedEventWindow = observer(( { event } : EventSelectWindowProps
     const { settings } = useContext(PageContext) as PageProps
 
     const [eventURL, setEventURL] = useState<string>(event.forms[0].href)
-    const [clientChoice, setClientChoice] = useState<string>("node-wot")
+    const [clientChoice, setClientChoice] = useState<string>("axios")
 
     useEffect(() => {
         setEventURL(event.forms[0].href)
-        return () => stopEvent()
     }, [event.forms[0].href])
    
     const streamEvent = useCallback(() => {
@@ -58,26 +57,26 @@ export const SelectedEventWindow = observer(( { event } : EventSelectWindowProps
             }
             thing.addEventSource(eventURL, source)
         }
-    }, [thing, eventURL, settings])
+    }, [thing, eventURL, settings, clientChoice, event])
 
-    const stopEvent = () => {
+    const stopEvent = useCallback(() => {
         if (clientChoice === "node-wot") {
             let eventSrc = thing.eventSources[event.name]
             if(eventSrc) {
-                eventSrc.unsubscribe()
+                thing.removeNodeWoTEventSource(event.name)
                 console.log(`unsubscribed from event ${event.name}`)
                 thing.removeEventSource(event.name)
             }
         }
         else {
-            let eventSrc = thing.eventSources[eventURL]
+            let eventSrc = thing.eventSources[eventURL] as EventSource
             if(eventSrc) {
                 eventSrc.close()
                 console.log(`closing event source ${eventURL}`)
                 thing.removeEventSource(eventURL)
             }
         }
-    }
+    }, [thing, eventURL, clientChoice, event, settings])
 
     return(
         <Stack>
@@ -91,7 +90,6 @@ export const SelectedEventWindow = observer(( { event } : EventSelectWindowProps
             >
                 {eventURL}
             </Link> 
-            
             <Stack direction = "row" sx={{ flexGrow: 1, display : 'flex', pl : 1, pt : 1 }}>
                 <ButtonGroup 
                     variant="contained"
