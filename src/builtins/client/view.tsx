@@ -486,8 +486,10 @@ export const ThingClient = () => {
     */
    useEffect(() => {
         const startServient = async() => {
+            // @ts-expect-error
             const servient = new Wot.Core.Servient(); 
             // Wot.Core is auto-imported by wot-bundle.min.js
+            // @ts-expect-error
             servient.addClientFactory(new Wot.Http.HttpsClientFactory({ allowSelfSigned : true }))
             servient.start().then((WoT : any) => {
                 console.log("WoT servient started")

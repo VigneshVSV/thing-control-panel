@@ -8,6 +8,7 @@ import ArrowBackTwoToneIcon from '@mui/icons-material/ArrowBackTwoTone';
 // Custom component libraries 
 import { styled } from '@mui/system';
 import {TablePagination, tablePaginationClasses as classes } from '@mui/base/TablePagination';
+import React from "react";
 
 
 type TabPanelProps = {

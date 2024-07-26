@@ -214,8 +214,8 @@ export class Thing {
     info : ThingInformation
     td : any 
     client : any
-    servient : Wot.Core.Servient
-    wot : Wot.Core.WoT
+    servient : any // Wot.Core.Servient
+    wot : any // Wot.Core.WoT
     fetchSuccessful : boolean
     // error displays
     errorMessage :  string
@@ -374,6 +374,7 @@ export class Thing {
         for (let key of Object.keys(this.eventSources)) {
             try {
                 if (this.eventSources[key] instanceof EventSource) {
+                    // @ts-expect-error
                     this.eventSources[key].close()
                     delete this.eventSources[key]
                     this.removeEventSource(key)
