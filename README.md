@@ -25,7 +25,7 @@ to have issues with self-signed certificates since version 119.
 - Responsive layout for smaller screens
 - Packaging in Electron
 
-Possible further idea
+Possible further ideas
 - Database viewer (i.e. viewer of properties that are stored in database)
 - Observe all properties, subscribe all events
 - Graphical data acquisition into file using events
