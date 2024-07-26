@@ -1,4 +1,4 @@
-# Dashboard UI
+# Thing Control Panel
 
 Admin control panel for thing implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked) python library in ReactJS
 Allows developing of server backend or test properties, actions and events. 
