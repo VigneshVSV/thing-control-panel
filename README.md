@@ -10,6 +10,8 @@ Allows developing of server backend or test properties, actions and events.
 
 ### Usage
 
+The GUI is only coming up, its still rough on the edges. 
+
 Insert the address of the device (https://{address of host}/{instance name of the thing}), then press load. If self signed
 HTTP(s) certificate is used, you might have to give permission to the browser. Its suggested to use Mozilla as Chrome seems
 to have issues with self-signed certificates since version 119. 
