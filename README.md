@@ -13,13 +13,10 @@ Insert the address of the device (https://{address of host}/{instance name of th
 HTTP(s) certificate is used, you might have to give permission to the browser. Its suggested to use Mozilla as Chrome seems
 to have issues with self-signed certificates since version 119. 
 
-
-```markdown
 ![Read-Write-Observe Properties](readme-assets/properties.png)
 ![Execute Actions](readme-assets/actions.png)
 ![Stream Events](readme-assets/events.png)
 
-```
 ### To Do
 
 - Log Viewer does not work, although its almost complete. 
