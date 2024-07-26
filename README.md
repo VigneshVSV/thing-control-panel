@@ -1,6 +1,7 @@
 # Dashboard UI
 
-Control panel for thing implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked) python library in ReactJS
+Admin control panel for thing implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked) python library in ReactJS
+Allows developing of server backend or test properties, actions and events. 
 
 ### Installation
 
@@ -23,6 +24,10 @@ to have issues with self-signed certificates since version 119.
 - Improvements in viewing TD, especially for events as its shown right below 
 - Responsive layout for smaller screens
 - Packaging in Electron
-- Database viewer
+
+Possible further idea
+- Database viewer (i.e. viewer of properties that are stored in database)
+- Observe all properties, subscribe all events
+- Graphical data acquisition into file using events
 
 Contributors welcome. There are also similar projects available from Web of Things community. 
