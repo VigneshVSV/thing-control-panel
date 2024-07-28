@@ -18,9 +18,19 @@ Insert the address of the device (https://{address of host}/{instance name of th
 HTTP(s) certificate is used, you might have to give permission to the browser. Its suggested to use Mozilla as Chrome seems
 to have issues with self-signed certificates since version 119. 
 
+After you load, your defined properties, actions and events are shown. You can freely interact with them as shown below:
+
 ![Read-Write-Observe Properties](readme-assets/properties.png)
 ![Execute Actions](readme-assets/actions.png)
 ![Stream Events](readme-assets/events.png)
+
+Its recommended to install a JSON viewer for your web browser, like [this](https://chromewebstore.google.com/detail/json-viewer/gbmdgpbipfallnflgajpaliibnhdgobh).
+
+You can then load the console entries in a new tab and read it in a correctly formatted way. Edit the number of entries that can stored in the console output
+by setting the value of "Max Entries" from the drop down. More entries will take more RAM, but useful for capturing events or eventful measurement data directly 
+in the GUI. 
+
+###### Contributors Welcome, please check issues. 
 
 ### To Do
 
