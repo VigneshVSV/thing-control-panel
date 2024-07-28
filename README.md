@@ -30,7 +30,7 @@ You can then load the console entries in a new tab and read it in a correctly fo
 by setting the value of "Max Entries" from the drop down. More entries will take more RAM, but useful for capturing events or eventful measurement data directly 
 in the GUI. 
 
-###### Contributors Welcome, please check issues. 
+##### Contributors welcome. There are also similar projects available from Web of Things community. 
 
 ### To Do
 
@@ -44,4 +44,4 @@ Possible further ideas
 - Observe all properties, subscribe all events
 - Graphical data acquisition into file using events
 
-Contributors welcome. There are also similar projects available from Web of Things community. 
+
