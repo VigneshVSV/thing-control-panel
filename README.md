@@ -6,7 +6,9 @@ Allows developing of server backend or test properties, actions and events.
 ### Installation
 
 ```npm install . ``` or ```npm install . --force``` to install the requirements and dependencies <br/>
-```npm start``` to run as react app <br/>
+```npm run dev``` to run as react app <br/>
+```npm run dev -- --host --port 12345``` to run on the network <br/>
+```npm run build``` to build and host with your own HTTP server <br/>
 
 ### Usage
 
