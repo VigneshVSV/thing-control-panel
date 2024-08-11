@@ -6,7 +6,8 @@ import { observer } from "mobx-react-lite";
 import { getFormattedTimestamp,  asyncRequest } from "../utils";
 // Internal & 3rd party component libraries
 import { Stack, Tabs, Tab, FormControl, FormControlLabel, Button, ButtonGroup, 
-    RadioGroup, Box, Radio, useTheme, TextField } from "@mui/material";
+    RadioGroup, Box, Radio, useTheme, TextField, 
+    Checkbox} from "@mui/material";
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-crimson_editor"
@@ -107,6 +108,7 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
     const { settings } = useContext(PageContext) as PageProps
     // property input choice - raw value or JSON
     const [inputChoice, setInputChoice ] = useState(property.inputType) // JSON and RAW are allowed
+    const [skipDataSchemaValidation, setSkipDataSchemaValidation] = useState(false)
     const [timeout, setTimeout] = useState<number>(-1)
     const [timeoutValid, setTimeoutValid] = useState<boolean>(true)
     const [clientChoice, _] = useState('node-wot')
@@ -157,6 +159,8 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
                 else 
                     response = await thing.client.writeProperty(property.name, { value : propValue })                
                 thing.setLastResponse(response)
+                response.ignoreValidation = skipDataSchemaValidation
+                console.log("ignoring validation", response.ignoreValidation)
                 consoleOutput = await response.value()
                 thing.resetError()
             }
@@ -201,7 +205,7 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
             console.log(error)
             thing.setError(error.message, null)
         }
-    }, [thing, settings, property, timeout, propValue])
+    }, [thing, settings, property, timeout, propValue, skipDataSchemaValidation, clientChoice])
 
     const readProp = useCallback(async() => await RWProp('READ'), [RWProp])
     const writeProp = useCallback(async() => await RWProp('WRITE'), [RWProp])
@@ -271,7 +275,15 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
                         Write
                     </Button>
                 </ButtonGroup>
-                
+                <FormControlLabel
+                    label="skip data schema validation"
+                    control={<Checkbox
+                                size="small"
+                                checked={skipDataSchemaValidation}
+                                onChange={(event) => setSkipDataSchemaValidation(event.target.checked)}
+                            />}
+                    sx={{ pl : 1 }}
+                />
             </Stack>
         </Stack>
     )
