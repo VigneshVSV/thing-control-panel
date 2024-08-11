@@ -4,6 +4,7 @@ Admin control panel in React for "Things" implemented with [`hololinked`](https:
 having a standard WoT Thing Description with HTTP protocol binding. Suitable for development of server backend, 
 test properties, actions and events or generic use purposes to interact with the Thing. 
 
+The GUI is only coming up, its still rough on the edges. 
 
 ### Installation
 
@@ -14,10 +15,12 @@ test properties, actions and events or generic use purposes to interact with the
 
 ### Usage
 
-The GUI is only coming up, its still rough on the edges. 
+Insert the address of the device, then press load. If you are using your own Thing server runtime or a standard location to store
+your thing descriptions, click on settings (cog-wheel on top left) and edit "default endpoint for fetching thing description" to suit
+your requirements. If you are using `hololinked` as the server, the default endpoint must `/resources/portal-app`, and enter the 
+Thing addresss as https://{address of host}/{instance name of the thing}.
 
-Insert the address of the device (https://{address of host}/{instance name of the thing}), then press load. If self signed
-HTTP(s) certificate is used, you might have to give permission to the browser. Its suggested to use Mozilla as Chrome seems
+If self signed HTTP(s) certificate is used, you might have to give permission to the browser. Its suggested to use Mozilla as Chrome seems
 to have issues with self-signed certificates since version 119. 
 
 After you load, your defined properties, actions and events are shown. You can freely interact with them as shown below:
