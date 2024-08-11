@@ -125,10 +125,10 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
     }, [])
 
     const RWProp = useCallback(async (mode : 'READ' | 'WRITE' ) => {
+        const requestTime = getFormattedTimestamp()
+        const requestTime_ = Date.now()
+        let request : AxiosRequestConfig, consoleOutput : string | null = null, response
         try {
-            let request : AxiosRequestConfig, consoleOutput : string | null = null, response
-            const requestTime = getFormattedTimestamp()
-            const requestTime_ = Date.now()
             /* 
             order -
                 1. perform operation 
@@ -157,11 +157,12 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
                 if(mode === 'READ') 
                     response = await thing.client.readProperty(property.name)
                 else 
-                    response = await thing.client.writeProperty(property.name, { value : propValue })                
+                    response = await thing.client.writeProperty(property.name, parseWithInterpretation(propValue, property.type))    
                 thing.setLastResponse(response)
-                response.ignoreValidation = skipDataSchemaValidation
-                console.log("ignoring validation", response.ignoreValidation)
-                consoleOutput = await response.value()
+                if(response) {
+                    response.ignoreValidation = skipDataSchemaValidation
+                    consoleOutput = await response.value()
+                }           
                 thing.resetError()
             }
             else {
@@ -194,17 +195,17 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
                     thing.resetError()
                 }
             }
-            let executionTime = Date.now() - requestTime_
             if(settings.console.stringifyOutput) 
                 console.log(JSON.stringify(consoleOutput, null, 2))
             else 
-                console.log(consoleOutput)    
-            console.log(`PROPERTY ${mode} : ${property.name}, REQUEST TIME : ${requestTime}, RESPONSE TIME : ${getFormattedTimestamp()}, EXECUTION TIME : ${executionTime.toString()}ms, RESPONSE BELOW :`)
+            console.log(consoleOutput)    
         } 
         catch(error : any){
             console.log(error)
             thing.setError(error.message, null)
         }
+        let executionTime = Date.now() - requestTime_
+        console.log(`PROPERTY ${mode} : ${property.name}, REQUEST TIME : ${requestTime}, RESPONSE TIME : ${getFormattedTimestamp()}, EXECUTION TIME : ${executionTime.toString()}ms, RESPONSE BELOW :`)
     }, [thing, settings, property, timeout, propValue, skipDataSchemaValidation, clientChoice])
 
     const readProp = useCallback(async() => await RWProp('READ'), [RWProp])
@@ -353,12 +354,14 @@ export const PropertyInputChoice = (props : PropertyInputChoiceProps) => {
 
 export const parseWithInterpretation = (value : any, interpretation : string) => {
     let jsonValue = JSON.parse(value)
-    console.log(interpretation, jsonValue)
-    switch(interpretation) {
-        case 'Integer' : return Number(jsonValue) 
-        case 'Number' : return Number(jsonValue)
-        case 'Boolean' : return Boolean(Number(jsonValue))
-        default : return JSON.parse(jsonValue) // String, Bytes, IPAddress
+    // console.log(interpretation, jsonValue)
+    switch(interpretation.toLowerCase()) {
+        case 'integer' : return Number(jsonValue) 
+        case 'number': return Number(jsonValue)
+        case 'bool' : 
+        case 'boolean' : return Boolean(Number(jsonValue))
+        default : return JSON.parse(jsonValue) // String, Bytes, IPAddress, 
+        // object & array?
     }
 }
 
@@ -394,12 +397,12 @@ const Observe = observer(({ property } : { property : PropertyInformation}) => {
     const observeProp = useCallback(() => {
         if (clientChoice === "node-wot") {
             thing.client.observeProperty(property.name, async (data : any) => {
-                data.ignoreValidation = true
+                // data.ignoreValidation = true
                 const value = await data.value()
                 if(settings.console.stringifyOutput)    
-                    console.log(value)            
+                    console.log(`${property.name} change event - ${value}`)            
                 else 
-                    console.log(JSON.parse(value))
+                    console.log(`${property.name} change event - ${JSON.parse(value)}`)
             }).then((subscription : any) => {
                 thing.addEventSource(property.name, subscription) 
                 console.log(`subscribed to observable event ${property.name}`)

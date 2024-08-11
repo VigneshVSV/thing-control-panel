@@ -549,7 +549,7 @@ export const defaultClientSettings : ClientSettingsType = {
     tabOrientation : 'vertical',
     updateLocalStorage : false,
     windowZoom : 100,
-    defaultEndpoint : "/resources/portal-app",
+    defaultEndpoint : "/resources/portal-app?ignore_errors=true",
     login : {
         displayFooter : true,
         footer : "",
