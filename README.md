@@ -1,7 +1,9 @@
 # Thing Control Panel
 
-Admin control panel in React for things implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked).
-Allows developing of server backend or test properties, actions and events. 
+Admin control panel in React for "Things" implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked) or 
+having a standard WoT Thing Description with HTTP protocol binding. Suitable for development of server backend, 
+test properties, actions and events or generic use purposes to interact with the Thing. 
+
 
 ### Installation
 
@@ -34,8 +36,9 @@ in the GUI.
 
 ### To Do
 
-- Log Viewer does not work, although its almost complete. 
+- Log Viewer does not work correctly, although its almost complete. 
 - Improvements in viewing TD, especially for events as its shown right below 
+- Settings are not saved correctly in browser
 - Responsive layout for smaller screens
 - Packaging in Electron
 

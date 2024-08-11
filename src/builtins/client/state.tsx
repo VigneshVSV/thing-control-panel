@@ -264,13 +264,13 @@ export class Thing {
         })
     }
 
-    async fetch(baseurl : string) { 
+    async fetch(baseurl : string, endpointURL : string = "") { 
         // this method always when set as action will raise a warning in MobX due to being async 
         // https://stackoverflow.com/questions/64770762/mobx-since-strict-mode-is-enabled-changing-observed-observable-values-withou
 
         try {
             const response = await axios({
-                url : "/resources/portal-app", 
+                url : endpointURL, 
                 method : "get", 
                 baseURL : baseurl
                 // httpsAgent: new https.Agent({ rejectUnauthorized: false })

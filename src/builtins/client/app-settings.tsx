@@ -63,8 +63,8 @@ export const SettingRow = ( {title, description, children} : SettingRowProps) =>
 
 
 
-const EditableTextSetting = observer(({ settingName, settingURL, initialValue, placeHolder } : 
-    { settingName : string, settingURL : string, initialValue : string, placeHolder : string}) => {
+const EditableTextSetting = observer(({ settingName, settingURL, initialValue, placeHolder, helperText } : 
+    { settingName : string, settingURL : string, initialValue : string, placeHolder : string, helperText : string}) => {
 
     const { updateSettingsInStorage } = useContext(SettingsUpdateContext) as SettingsProps
 
@@ -76,37 +76,40 @@ const EditableTextSetting = observer(({ settingName, settingURL, initialValue, p
     , [initialValue])
   
     return(
-        <OutlinedInput
-            size='small' 
-            fullWidth 
-            placeholder={placeHolder}
-            sx={{ pl : 0 }}
-            disabled={!edit}
-            value={value}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => setValue(event.target.value)}
-            startAdornment = {
-                <InputAdornment position='start'>
-                    {edit? 
-                        <IconButton 
-                            sx={{bgcolor : '#808080', borderRadius : 0 }}
-                            onClick={async () =>  {
-                                await updateSettingsInStorage(settingURL, settingName, value, null)
-                                setEdit(!edit)
-                            }}
-                        >
-                            <IconsMaterial.DoneOutlineTwoTone />
-                        </IconButton>
-                        :
-                        <IconButton 
-                            sx={{bgcolor : '#808080', borderRadius : 0 }}
-                            onClick={() => setEdit(true)}
-                        >
-                            <IconsMaterial.EditTwoTone />
-                        </IconButton>
-                    }
-                </InputAdornment>
-            }
-        />
+        <>
+            <OutlinedInput
+                size='small' 
+                fullWidth 
+                placeholder={placeHolder}
+                sx={{ pl : 0 }}
+                disabled={!edit}
+                value={value}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => setValue(event.target.value)}
+                startAdornment = {
+                    <InputAdornment position='start'>
+                        {edit? 
+                            <IconButton 
+                                sx={{bgcolor : '#808080', borderRadius : 0 }}
+                                onClick={async () =>  {
+                                    await updateSettingsInStorage(settingURL, settingName, value, null)
+                                    setEdit(!edit)
+                                }}
+                                >
+                                <IconsMaterial.DoneOutlineTwoTone />
+                            </IconButton>
+                            :
+                            <IconButton 
+                                sx={{ bgcolor : '#808080', borderRadius : 0 }}
+                                onClick={() => setEdit(true)}
+                            >
+                                <IconsMaterial.EditTwoTone />
+                            </IconButton>
+                        }
+                    </InputAdornment>
+                }
+            />
+            <Typography variant="caption" >{helperText}</Typography>
+        </>
     )
 })
 
@@ -221,7 +224,7 @@ export const LoginPageSettings = observer(() => {
                     />
                    
                 </Grid>
-                <Grid item>
+                {/* <Grid item>
                     <EditableTextSetting 
                         settingName="login.footer"
                         settingURL="/login"
@@ -236,7 +239,7 @@ export const LoginPageSettings = observer(() => {
                         initialValue={settings.login.footerLink}
                         placeHolder="login footer link" 
                     />
-                </Grid>
+                </Grid> */}
             </Grid>
         </Box>            
     )
@@ -341,6 +344,7 @@ const OtherSettings = () => {
     return (
         <Box sx={{ pl : 10 }}>
             <Grid container direction='column' id="dashboards-settings">
+                <Typography variant="button" sx={{ pt : 2 }}>Other Settings</Typography>     
                 <Grid item sx={{ pt : 2 }}>
                     <SelectSetting
                         settingName="tabOrientation"
@@ -349,6 +353,17 @@ const OtherSettings = () => {
                         label="tab orientation"
                         allowedValues={["horizontal", "vertical"]}
                     />
+                </Grid>
+                <Grid item sx={{ pt : 2 }}>
+                    <Box sx={{ maxWidth : 500 }}>
+                        <EditableTextSetting 
+                            settingName="defaultEndpoint"
+                            settingURL="/thing-viewer"
+                            initialValue={settings.defaultEndpoint}
+                            placeHolder="default endpoint for fetching thing description"
+                            helperText="default endpoint for fetching thing description in addition to the main server URL which is entered in the URL input"
+                        />
+                    </Box>
                 </Grid>
                 <Grid item sx={{pt : 2}}>
                     <BooleanSwitchSetting 
@@ -410,6 +425,7 @@ export const AppSettings = ( { globalState } : { globalState : any }) => {
         }
         else {
             const settingKeys = settingName.split('.');
+            console.log(settingKeys)
             updateNestedSetting(settings, settingKeys, value);
             updateSettings(JSON.parse(JSON.stringify(settings)))
             updateLocalStorage(settings)
@@ -509,6 +525,7 @@ export type ClientSettingsType = {
     tabOrientation : "horizontal" | "vertical",
     updateLocalStorage : boolean,
     windowZoom : number,
+    defaultEndpoint : string,
     login : {
         displayFooter : boolean
         footer : string
@@ -532,6 +549,7 @@ export const defaultClientSettings : ClientSettingsType = {
     tabOrientation : 'vertical',
     updateLocalStorage : false,
     windowZoom : 100,
+    defaultEndpoint : "/resources/portal-app",
     login : {
         displayFooter : true,
         footer : "",

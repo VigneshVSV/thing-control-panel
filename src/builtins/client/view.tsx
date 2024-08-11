@@ -54,7 +54,7 @@ export const Locator = observer(() => {
     const { settings } = useContext(PageContext) as PageProps
 
     const fetchThing = useCallback(async(currentURL : string) => {
-        await thing.fetch(currentURL)
+        await thing.fetch(currentURL, settings.defaultEndpoint)
         if(!thing.fetchSuccessful) {
             console.log("could not load thing")
             if(settings.console.stringifyOutput)
@@ -96,7 +96,7 @@ export const Locator = observer(() => {
                 </IconButton>
                 <IconButton
                     id="open-resource-json-in-new-tab"
-                    onClick={() => window.open(currentURL + '/resources/portal-app')}
+                    onClick={() => window.open(currentURL + settings.defaultEndpoint)}
                     sx = {{ borderRadius : 0 }}
                 >
                     <OpenInNewTwoToneIcon />
