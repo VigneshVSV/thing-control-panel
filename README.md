@@ -4,9 +4,8 @@ Admin control panel in React for Things having a standard WoT Thing Description 
 implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked). Suitable for development of server backend, 
 test properties, actions and events or generic use purposes to interact with the Thing. 
 
-The GUI is only coming up, its still rough on the edges. 
-
-If anything is not upto your standard or buggy/broken, please do feel free to reach me, or open a discussion in the discussions tab or an issue. 
+The GUI is only coming up, its still rough on the edges. If anything is not upto your standard or buggy/broken,
+ please do feel free to reach me, or open a discussion in the discussions tab or an issue. 
 <br>
 [![email](https://img.shields.io/badge/email%20me-brown)](mailto:vignesh.vaidyanathan@hololinked.dev) [![ways to contact me](https://img.shields.io/badge/ways_to_contact_me-brown)](https://hololinked.dev/contact) <br>
 
