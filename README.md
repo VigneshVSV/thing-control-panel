@@ -1,10 +1,15 @@
 # Thing Control Panel
 
-Admin control panel in React for "Things" implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked) or 
-having a standard WoT Thing Description with HTTP protocol binding. Suitable for development of server backend, 
+Admin control panel in React for Things having a standard WoT Thing Description with HTTP protocol binding or 
+implemented with [`hololinked`](https://github.com/VigneshVSV/hololinked). Suitable for development of server backend, 
 test properties, actions and events or generic use purposes to interact with the Thing. 
 
 The GUI is only coming up, its still rough on the edges. 
+
+If anything is not upto your standard or buggy/broken, please do feel free to reach me:
+<br>
+[![email](https://img.shields.io/badge/email%20me-brown)](mailto:vignesh.vaidyanathan@hololinked.dev) [![ways to contact me](https://img.shields.io/badge/ways_to_contact_me-brown)](https://hololinked.dev/contact) <br>
+or open a discussion in the discussions tab or an issue. 
 
 ### Installation
 
@@ -15,13 +20,16 @@ The GUI is only coming up, its still rough on the edges.
 
 ### Usage
 
-Insert the address of the device, then press load. If you are using your own Thing server runtime or a standard location to store
+Insert the address of the device or the endpoint of the thing description, then press load. If you are using your own Thing server runtime or a standard location to store
 your thing descriptions, click on settings (cog-wheel on top left) and edit "default endpoint for fetching thing description" to suit
-your requirements. If you are using `hololinked` as the server, the default endpoint must `/resources/portal-app`, and enter the 
-Thing addresss as https://{address of host}/{instance name of the thing}.
+your requirements. The address enetered in the address bar will then be considered as base URL and the default endpoint will be appended.
+Store your addresses in the browser using the store icon on the top right - this storage is browser specific.  
 
-If self signed HTTP(s) certificate is used, you might have to give permission to the browser. Its suggested to use Mozilla as Chrome seems
-to have issues with self-signed certificates since version 119. 
+If you are using `hololinked` as the server, the default endpoint must be one of `/resources/portal-app`, `/resources/wot-td` or `/resources/wot-td?ignore_errors=true`, and
+enter the Thing addresss as `http(s)://{address of host}/{instance name of the thing}`.
+
+If self signed HTTP(s) certificate is used, you might have to give permission to the browser. You can open the endpoint in new tab using the new tab button on top right. 
+This should fetch the thing description without fail.  
 
 After you load, your defined properties, actions and events are shown. You can freely interact with them as shown below:
 
@@ -29,13 +37,19 @@ After you load, your defined properties, actions and events are shown. You can f
 ![Execute Actions](readme-assets/actions.png)
 ![Stream Events](readme-assets/events.png)
 
+Supported ops are
+- read, write & observe property
+- invoke action
+- subscribe event 
+  
+Whenever an operation is executed, the output is printed in the console below. 
 Its recommended to install a JSON viewer for your web browser, like [this](https://chromewebstore.google.com/detail/json-viewer/gbmdgpbipfallnflgajpaliibnhdgobh).
 
-You can then load the console entries in a new tab and read it in a correctly formatted way. Edit the number of entries that can stored in the console output
-by setting the value of "Max Entries" from the drop down. More entries will take more RAM, but useful for capturing events or eventful measurement data directly 
-in the GUI. 
+You can then load the console entries in a new tab and read it in a correctly formatted way or download it for other purposes. 
+Edit the number of entries that can stored in the console output by setting the value of "Max Entries" from the drop down. 
+More entries will take more RAM, but useful for capturing events or eventful measurement data directly in the GUI. 
 
-##### Contributors welcome. There are also similar projects available from Web of Things community. 
+##### Contributors welcome. Feel free to also propose new ideas. There are also similar projects available from Web of Things community. 
 
 ### To Do
 
