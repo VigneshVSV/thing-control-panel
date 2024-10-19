@@ -101,6 +101,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
     const [inputChoice, setInputChoice ] = useState('JSON')
     const [timeout, setTimeout] = useState<number>(-1)
     const [timeoutValid, setTimeoutValid] = useState<boolean>(true)
+    const [skipResponseValidation, setSkipResponseValidation] = useState(false)
     const [kwargsValue, setKwargsValue] = useState<any>(null)
     const handleInputSelection = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         setInputChoice(event.target.value)
@@ -177,6 +178,8 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
             else {
                 let lastResponse = await thing.client.invokeAction(action.name, data)
                 thing.setLastResponse(lastResponse)
+                if(skipResponseValidation)
+                    lastResponse.ignoreValidation = true
                 consoleOutput = await lastResponse.value()
                 if(!consoleOutput)
                     consoleOutput = 'no return value'
@@ -192,7 +195,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
             // console.log(error)
             thing.setError(error.message, null)
         } 
-    }, [thing, action, settings, fetchExecutionLogs, kwargsValue, timeout, clientChoice])
+    }, [thing, action, settings, fetchExecutionLogs, kwargsValue, timeout, clientChoice, skipResponseValidation])
 
     const handleTimeoutChange = useCallback((event : any) => {
         let oldTimeout =  timeout 
@@ -263,6 +266,15 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                         </Button>     */}
                     {/* </ButtonGroup> */}
                 </Box>                
+                <FormControlLabel
+                    label="skip response validation"
+                    control={<Checkbox
+                                size="small"
+                                checked={skipResponseValidation}
+                                onChange={(event) => setSkipResponseValidation(event.target.checked)}
+                            />}
+                    sx={{ p : 1, pt:2 }}
+                />
                 {/* <FormControlLabel
                     label="fetch execution logs"
                     control={<Checkbox

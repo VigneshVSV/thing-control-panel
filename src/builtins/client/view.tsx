@@ -189,7 +189,7 @@ const LocatorAutocomplete = ({
 
 
 
-const thingOptions = ['Properties', 'Actions', 'Events', 'Doc', 'Log Viewer']
+const thingOptions = ['Properties', 'Actions', 'Events', 'Doc/Description']
 
 const FunctionalitiesView = observer(() => {
 
@@ -339,7 +339,7 @@ const Functionalities = observer(({ type } : { type : string }) => {
 
     switch(type) {
 
-        case 'Doc' : return <ClassDocWindow />
+        case 'Doc/Description' : return <ClassDocWindow />
 
         case 'Database' : return <Typography sx={{p : 2}}>No DB client</Typography>
 
