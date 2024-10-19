@@ -96,7 +96,9 @@ export const Locator = observer(() => {
                 </IconButton>
                 <IconButton
                     id="open-resource-json-in-new-tab"
-                    onClick={() => window.open(currentURL + settings.defaultEndpoint)}
+                    onClick={() => window.open(
+                        settings.defaultEndpoint? currentURL + settings.defaultEndpoint :
+                        currentURL )}
                     sx = {{ borderRadius : 0 }}
                 >
                     <OpenInNewTwoToneIcon />
@@ -341,7 +343,7 @@ const Functionalities = observer(({ type } : { type : string }) => {
 
         case 'Database' : return <Typography sx={{p : 2}}>No DB client</Typography>
 
-        case 'Log Viewer' : return <LiveLogViewer />
+        //  case 'Log Viewer' : return <LiveLogViewer />
 
         default : return <InteractionAffordancesView type={type as "Properties" | "Actions" | "Events"} />
                    

@@ -227,11 +227,11 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                         onChange={handleInputSelection}
                     >
                         <FormControlLabel value="raw" control={<Radio size="small" />} label="raw" />
-                        <FormControlLabel value="JSON" control={<Radio size="small" />} label="JSON" />
+                        <FormControlLabel value="JSON" control={<Radio size="small" />} label="code editor" />
                     </RadioGroup>
                 </FormControl>
-                <Box sx={{ pl : 2, pt: 2, pr: 2, maxWidth : 100 }} >
-                    <TextField
+                {/* <Box sx={{ pl : 2, pt: 2, pr: 2, maxWidth : 100 }} > */}
+                    {/* <TextField
                         id='console-window-timeout-input'
                         label='Timeout (s)'    
                         size='small'
@@ -239,7 +239,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                         error={!timeoutValid}
                         onChange={handleTimeoutChange}
                     />
-                </Box>
+                </Box> */}
                 <Box sx={{pt: 2, flexGrow: 0.01, display : 'flex' }} >
                     {/* <ButtonGroup> */}
                         <Button 
@@ -263,7 +263,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                         </Button>     */}
                     {/* </ButtonGroup> */}
                 </Box>                
-                <FormControlLabel
+                {/* <FormControlLabel
                     label="fetch execution logs"
                     control={<Checkbox
                                 size="small"
@@ -271,7 +271,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                                 onChange={(event) => setFetchExecutionLogs(event.target.checked)}
                             />}
                     sx={{ pl : 1, pt : 2}}
-                />
+                /> */}
             </Stack>
         </Stack>
     )
@@ -292,9 +292,7 @@ export const ActionInputChoice = (props : ActionInputChoiceProps) => {
         case 'JSON' : return <Box id="ace-editor-box" sx={{display : 'flex', flexGrow : 1}}>
                                 <AceEditor
                                     name="actions-client-json-input"
-                                    placeholder="Enter keyword as JSON and non-keywords under a 'args' field as a list. 
-                                    for ex - { 'args' : [1, 'foo'], 'my_kw_arg1' : false, 'my_kw_arg2' : [1, 2, 3] }.
-                                    This is equivalent to self.my_func(1, 'foo', my_kw_arg1=my_kw_arg1, my_kw_arg2=my_kw_arg2)."
+                                    placeholder="payload for executing action"
                                     mode="json"
                                     theme="crimson_editor"
                                     value={

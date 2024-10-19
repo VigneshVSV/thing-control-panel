@@ -24,13 +24,14 @@ This application is written in plain React and therefore CSR. It is intended to 
 Insert the address of the device or the endpoint of the thing description, then press load. If you are using your own Thing server runtime or a standard location to store
 your thing descriptions, click on settings (cog-wheel on top left) and edit "default endpoint for fetching thing description" to suit
 your requirements. The address enetered in the address bar will then be considered as base URL and the default endpoint will be appended.
-Store your addresses in the browser using the store icon on the top right - this storage is browser specific.  
+Store your addresses in the browser using the store icon on the top right so that you dont have to type the address everytime - this storage is browser specific.  
 
 If you are using `hololinked` as the server, the default endpoint must be one of `/resources/portal-app`, `/resources/wot-td` or `/resources/wot-td?ignore_errors=true`, and
 enter the Thing addresss as `http(s)://{address of host}/{instance name of the thing}`.
 
 If self signed HTTP(s) certificate is used, you might have to give permission to the browser. You can open the endpoint in new tab using the new tab button on top right. 
-This should fetch the thing description without fail.  
+This should fetch the thing description without fail. Sometimes, the permission given for self signed certificate given may not match the form entries, so please do make
+sure you can atleast fetch/read one property if things are still not working.  
 
 After you load, your defined properties, actions and events are shown. You can freely interact with them as shown below:
 
@@ -41,16 +42,19 @@ After you load, your defined properties, actions and events are shown. You can f
 Supported ops are
 - read, write & observe property
 - invoke action
-- subscribe event 
+- subscribe & unsubscribe event 
   
 Whenever an operation is executed, the output is printed in the console below. 
 Its recommended to install a JSON viewer for your web browser, like [this](https://chromewebstore.google.com/detail/json-viewer/gbmdgpbipfallnflgajpaliibnhdgobh).
+
+Credentials or security definitions are not supported yet, sorry, please feel free to add support for it. The client is built on top of node-wot so all
+node-wot features can, in principle, be supported. 
 
 You can then load the console entries in a new tab and read it in a correctly formatted way or download it for other purposes. 
 Edit the number of entries that can stored in the console output by setting the value of "Max Entries" from the drop down. 
 More entries will take more RAM, but useful for capturing events or eventful measurement data directly in the GUI. 
 
-##### Contributors welcome. Feel free to also propose new ideas. There are also similar projects available from Web of Things community. 
+##### Contributors welcome. Feel free to also propose new ideas or add more ops. There are also similar projects available from Web of Things community. 
 
 ### To Do
 
@@ -59,10 +63,10 @@ More entries will take more RAM, but useful for capturing events or eventful mea
 - Settings are not saved correctly in browser
 - Responsive layout for smaller screens
 - Packaging in Electron
+- Observe all properties, subscribe all events & top level forms
 
 Possible further ideas
 - Database viewer (i.e. viewer of properties that are stored in database)
-- Observe all properties, subscribe all events
 - Graphical data acquisition into file using events
 
 

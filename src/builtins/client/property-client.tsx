@@ -242,10 +242,10 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
                         onChange={handleInputSelection}
                     >
                         <FormControlLabel value="RAW" control={<Radio size="small" />} label="raw" />
-                        <FormControlLabel value="JSON" control={<Radio size="small" />} label="JSON" />
+                        <FormControlLabel value="JSON" control={<Radio size="small" />} label="code editor" />
                     </RadioGroup>
                 </FormControl>
-                <Box sx={{ pl : 2, pt: 2, pr: 2, maxWidth : 100 }} >
+                {/* <Box sx={{ pl : 2, pt: 2, pr: 2, maxWidth : 100 }} >
                     <TextField
                         id='timeout-input'
                         label='Timeout (s)'    
@@ -254,7 +254,7 @@ export const RW = ( { property } : { property : PropertyInformation}) => {
                         error={!timeoutValid}
                         onChange={handleTimeoutChange}
                     />
-                </Box>
+                </Box> */}
                 <ButtonGroup 
                     id='rw-buttons'
                     variant="contained"
@@ -309,9 +309,7 @@ export const PropertyInputChoice = (props : PropertyInputChoiceProps) => {
                                 <Stack direction='row' sx={{ flexGrow : 1 }}>
                                     <AceEditor
                                         name="prop-client-json-input"
-                                        placeholder={props.property.readOnly? "disabled" : 
-                                            "Enter value directly or under a value field like { 'value' : ... }"
-                                        }
+                                        placeholder={props.property.readOnly? "disabled" : "enter value here" }
                                         mode="json"
                                         theme="crimson_editor"
                                         onChange={(newValue) => props.setValue(newValue)}
@@ -353,14 +351,21 @@ export const PropertyInputChoice = (props : PropertyInputChoiceProps) => {
 }
 
 export const parseWithInterpretation = (value : any, interpretation : string) => {
-    let jsonValue = JSON.parse(value)
+    // console.log("value", value)
+    let jsonValue
+    try {
+        jsonValue = JSON.parse(value)
+    } catch(error) {
+        jsonValue = value
+    }
+
     // console.log(interpretation, jsonValue)
     switch(interpretation.toLowerCase()) {
         case 'integer' : return Number(jsonValue) 
         case 'number': return Number(jsonValue)
         case 'bool' : 
         case 'boolean' : return Boolean(Number(jsonValue))
-        default : return JSON.parse(jsonValue) // String, Bytes, IPAddress, 
+        default : return jsonValue // String, Bytes, IPAddress, 
         // object & array?
     }
 }

@@ -3,20 +3,21 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 // Custom functional libraries
 // Internal & 3rd party component libraries
-import { Button, Stack, ButtonGroup, Link } from "@mui/material"
+import { Button, Stack, ButtonGroup, Link, Tabs, Tab } from "@mui/material"
 // Custom component libraries 
 import { EventInformation } from './state'
 import { Thing } from "./state";
 import { PageContext, PageProps, ThingManager } from "./view";
-import { ObjectInspector } from "react-inspector";
+import { ObjectInspector, chromeLight } from "react-inspector";
+import { TabPanel } from "../reuse-components";
 
 
 
-type EventSelectWindowProps =  { 
+type SelectedEventWindowProps =  { 
     event : EventInformation
 }
 
-export const SelectedEventWindow = observer(( { event } : EventSelectWindowProps) => {
+export const Subscription = observer(( { event } : SelectedEventWindowProps) => {
 
     const thing = useContext(ThingManager) as Thing
     const { settings } = useContext(PageContext) as PageProps
@@ -39,7 +40,7 @@ export const SelectedEventWindow = observer(( { event } : EventSelectWindowProps
                     console.log(JSON.parse(value))
             }).then((subscription : any) => {
                 thing.addEventSource(event.name, subscription) 
-                console.debug("subscribed to intensity measurement event")
+                console.debug(`subscribed to event source at ${eventURL}`)
             })
         } else {
             let source = new EventSource(eventURL)
@@ -113,10 +114,79 @@ export const SelectedEventWindow = observer(( { event } : EventSelectWindowProps
                     </Button>
                 </ButtonGroup>
             </Stack>
-            <ObjectInspector data={thing.td["events"][event.name]} expandLevel={3} />
         </Stack>
     )
 })
 
 
 
+const eventFields = ['Subscription', 'Doc']
+
+export const SelectedEventWindow = (props : SelectedEventWindowProps) => {
+
+    const [eventFieldsTab, setEventFieldsTab] = useState(0);
+    const handleTabChange = useCallback((_ : React.SyntheticEvent, newValue: number) => {
+        setEventFieldsTab(newValue);
+    }, [])
+    
+    return (
+        <Stack id="selected-action-view-layout" sx={{ flexGrow: 1, display : 'flex' }} >
+            <Tabs
+                id="selected-action-fields-tab"
+                variant="scrollable"
+                value={eventFieldsTab}
+                onChange={handleTabChange}
+                sx={{ borderBottom: 2, borderColor: 'divider' }}
+            >
+                {eventFields.map((name : string) => 
+                    <Tab 
+                        key={"selected-action-fields-tab-"+name}    
+                        id={name} 
+                        label={name} 
+                        sx={{ maxWidth: 150}} 
+                    />
+                )}
+            </Tabs>
+            {eventFields.map((name : string, index : number) => 
+                <TabPanel 
+                    key={"selected-action-fields-tabpanel-"+name}
+                    tree="selected-action-fields-tab"
+                    value={eventFieldsTab} 
+                    index={index} 
+                >
+                    <EventTabComponents 
+                        tab={name} 
+                        event={props.event}
+                    />
+                </TabPanel>
+            )} 
+        </Stack>
+    )
+}
+
+
+
+type EventTabComponentsProps = {
+    tab : string
+    event : EventInformation
+}
+
+
+const EventTabComponents = ( { tab, event } : EventTabComponentsProps) => {
+
+    const thing = useContext(ThingManager) as Thing
+
+    switch(tab) {
+        case "Doc" : return <ObjectInspector 
+                                data={thing.td["events"][event.name]} 
+                                expandLevel={3}     
+                                // @ts-ignore
+                                theme={{
+                                    ...chromeLight,                          
+                                    BASE_FONT_SIZE: '14px'
+                                }}
+                            />
+                        
+        default : return <Subscription event={event} />
+    }
+}
