@@ -17,6 +17,8 @@ If anything is not upto your standard or buggy/broken, please do feel free to re
 ```npm run dev -- --host --port 12345``` to run on the network <br/>
 ```npm run build``` to build and host with your own HTTP server <br/>
 
+This application is written in plain React and therefore CSR. It is intended to keep it like that.
+
 ### Usage
 
 Insert the address of the device or the endpoint of the thing description, then press load. If you are using your own Thing server runtime or a standard location to store
