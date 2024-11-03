@@ -8,7 +8,7 @@ import { EventInformation, ActionInformation, PropertyInformation, ResourceInfor
 import { AppSettings, ClientSettingsType, defaultClientSettings } from "./app-settings.js";
 // Internal & 3rd party component libraries
 import { Box, Button, Stack, Tab, Tabs, Typography, TextField, Divider,
-    IconButton, Autocomplete, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+    IconButton, Autocomplete, List, ListItem, ListItemButton, ListItemText, CircularProgress } from "@mui/material";
 import SaveTwoToneIcon from '@mui/icons-material/SaveTwoTone';
 import ArrowBackTwoToneIcon from '@mui/icons-material/ArrowBackTwoTone';
 import OpenInNewTwoToneIcon from '@mui/icons-material/OpenInNewTwoTone';
@@ -49,11 +49,14 @@ export const ThingViewer = () => {
 export const Locator = observer(() => {
 
     const [existingURLs, modifyOptions] = useAutoCompleteOptionsFromLocalStorage('thing-url-text-input')
-    const [currentURL, setCurrentURL] = useState<string>('')
+    const [currentURL, setCurrentURL] = useState<string>(window.location ? window.location.hash ? window.location.hash.substring(1) : '' : '')
+    const [loadingThing, setLoadingThing] = useState<boolean>(false)
+
     const thing = useContext(ThingManager) as Thing
     const { settings } = useContext(PageContext) as PageProps
 
     const fetchThing = useCallback(async(currentURL : string) => {
+        setLoadingThing(true)
         await thing.fetch(currentURL, settings.defaultEndpoint)
         if(!thing.fetchSuccessful) {
             console.log("could not load thing")
@@ -66,8 +69,15 @@ export const Locator = observer(() => {
             if(thing.errorTraceback)
                 console.log(thing.errorTraceback)
         }
+        setLoadingThing(false)
     }, [settings])
-    
+
+    useEffect(() => {
+        if(!currentURL)
+            return     
+        fetchThing(currentURL)
+    }, [])
+
     return (
         <Stack id="locator-horizontal-layout" direction="row" sx={{ flexGrow : 1, display : 'flex' }}>
             <LocatorAutocomplete 
@@ -85,6 +95,7 @@ export const Locator = observer(() => {
                     sx={{ borderRadius : 0 }}
                 >
                     Load
+                    {loadingThing? <Box sx={{ pl : 1, pt : 0.5 }}><CircularProgress size={20} /></Box>: null }
                 </Button>
                 <Divider orientation="vertical" />
                 <IconButton
