@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react-swc'
 import dns from 'dns'
 dns.setDefaultResultOrder('verbatim')
 
-import { appConfig } from './src/config.js';
+import { appConfig } from './app.config.js';
 
 const plugins= [react()] 
 if(appConfig.useHTTPs)
