@@ -149,12 +149,14 @@ export class ActionInformation extends ResourceInformation {
     kwdefaults : any
     defaults : any
     signature : Array<string> 
+    input: any
    
     constructor(data: Partial<ActionInformation>, name: string = '') {
         super(data, name);
         this.kwdefaults = null;
         this.defaults = null;
         this.signature = [];
+        this.input = null;
         this.updateFromJSON(data);
     }
 }
