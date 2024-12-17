@@ -57,7 +57,6 @@ More entries will take more RAM, but useful for capturing events or eventful mea
 
 ### To Do
 
-- Log Viewer does not work correctly, although its almost complete. 
 - Improvements in viewing TD, especially for events as its shown right below 
 - Settings are not saved correctly in browser
 - Responsive layout for smaller screens
@@ -66,6 +65,7 @@ More entries will take more RAM, but useful for capturing events or eventful mea
 
 Possible further ideas
 - Database viewer (i.e. viewer of properties that are stored in database)
+- Log Viewer does not work correctly, although its almost complete. 
 - Graphical data acquisition into file using events
 
 
