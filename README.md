@@ -53,9 +53,15 @@ You can then load the console entries in a new tab and read it in a correctly fo
 Edit the number of entries that can stored in the console output by setting the value of "Max Entries" from the drop down. 
 More entries will take more RAM, but useful for capturing events or eventful measurement data directly in the GUI. 
 
-##### Contributors welcome. Feel free to also propose new ideas or add more ops. There are also similar projects available from Web of Things community. 
+### Configuration - app.config.ts
+
+This file contains certain configurations that can be modified according to your requirements:
+
+- `useHTTPs` - when set to `true`, the app will rendered with a self signed SSL certificate from vite. 
 
 ### To Do
+
+##### Contributors welcome. Feel free to also propose new ideas or add more ops. There are also similar projects available from Web of Things community. 
 
 - Improvements in viewing TD, especially for events as its shown right below 
 - Settings are not saved correctly in browser
