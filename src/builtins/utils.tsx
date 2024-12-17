@@ -96,3 +96,67 @@ export async function asyncRequest(AxiosObject : AxiosRequestConfig) {
     })
     return response
 }
+
+
+export const parseWithInterpretation = (value : any, interpretation : string) => {
+    let jsonValue
+    try {
+        jsonValue = JSON.parse(value)
+    } catch(error) {
+        jsonValue = value
+    }
+
+    // console.log(interpretation, jsonValue)
+    switch(interpretation.toLowerCase()) {
+        case 'integer' : return Number(jsonValue) 
+        case 'number': return Number(jsonValue)
+        case 'bool' : 
+        case 'boolean' : {
+            if (typeof jsonValue === 'string')
+                return jsonValue.toLowerCase() === 'true'
+            else if (typeof jsonValue === 'number')   
+                return Boolean(Number(jsonValue))
+            throw new Error('Invalid value for boolean')
+        }
+        default : return jsonValue // String, Bytes, IPAddress, 
+        // object & array?
+    }
+
+    // chat-GPT output - cross check next time
+    // function castValue(value, schemaType) {
+    //     switch (schemaType) {
+    //         case 'string':
+    //             return String(value);
+    //         case 'number':
+    //             return Number(value);
+    //         case 'integer':
+    //             return parseInt(value, 10);
+    //         case 'boolean':
+    //             return value === 'true' || value === true;
+    //         case 'array':
+    //             return Array.isArray(value) ? value : [value];
+    //         case 'object':
+    //             try {
+    //                 return typeof value === 'object' ? value : JSON.parse(value);
+    //             } catch {
+    //                 throw new Error("Invalid object format");
+    //             }
+    //         default:
+    //             throw new Error(`Unsupported type: ${schemaType}`);
+    //     }
+    // }
+    
+}
+
+
+
+export const parseActionPayloadWithInterpretation = (value : any, schema : any) => {
+    if(schema.type === 'object' && schema.properties && Object.keys(schema.properties).length === 1) {
+        let obj = {}
+        obj[Object.keys(schema.properties)[0]] = parseWithInterpretation(value, 
+                                    schema.properties[Object.keys(schema.properties)[0]].type)      
+        return obj
+    }
+    else 
+        console.log("use code editor to supply input for this action")
+}
