@@ -2,7 +2,7 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { AxiosResponse } from "axios";
 // Custom functional libraries
-import { getFormattedTimestamp, asyncRequest } from "../utils";
+import { getFormattedTimestamp, asyncRequest, parseActionPayloadWithInterpretation } from "../utils";
 // Internal & 3rd party component libraries
 import { Stack, Divider, Tabs, Tab, FormControl, FormControlLabel, Button, ButtonGroup, 
     RadioGroup, Box, Radio, useTheme, TextField, Checkbox } from "@mui/material";
@@ -81,17 +81,17 @@ export const ActionTabComponents = ( {tab, action} : ActionTabComponentsProps) =
             const thing = useContext(ThingManager) as Thing
             return <ObjectInspector expandLevel={3} data={thing.td["actions"][action.name]} /> 
         }
-        default : return <ActionExecutionClient action={action} ></ActionExecutionClient>
+        default : return <ActionInvokationClient action={action} ></ActionInvokationClient>
     }
 }
 
 
 
-type ActionExecutionProps = {
+type ActionInvokationProps = {
     action : ActionInformation
 }
 
-export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
+export const ActionInvokationClient = ( { action } : ActionInvokationProps) => {
 
     const thing = useContext(ThingManager) as Thing
     const { settings } = useContext(PageContext) as PageProps
@@ -176,6 +176,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                 
             }
             else {
+                console.log("payload", data)
                 let lastResponse = await thing.client.invokeAction(action.name, data)
                 thing.setLastResponse(lastResponse)
                 if(skipResponseValidation)
@@ -185,7 +186,7 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
                     consoleOutput = 'no return value'
             }       
             if(settings.console.stringifyOutput) 
-                console.log("\n" + JSON.stringify(consoleOutput, null, 2))
+                console.log(JSON.stringify(consoleOutput, null, 2))
             else 
                 console.log(consoleOutput)
             let executionTime = Date.now() - requestTime_
@@ -213,7 +214,8 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
         <Stack id='action-execution-client-layout' sx={{ flexGrow: 1, display : 'flex', pt: 2 }}>
             <ActionInputChoice 
                 choice={inputChoice} 
-                signature={action.signature} 
+                signature={action.signature}
+                inputSchema={action.input} 
                 setValue={setKwargsValue} 
                 value={kwargsValue}    
             />
@@ -292,8 +294,9 @@ export const ActionExecutionClient = ( { action } : ActionExecutionProps) => {
 
 
 type ActionInputChoiceProps = { 
-    choice : string, 
-    signature : Array<string>,
+    choice : string
+    signature : Array<string>
+    inputSchema : object
     setValue : any
     value : any 
 }
@@ -344,6 +347,10 @@ export const ActionInputChoice = (props : ActionInputChoiceProps) => {
                             label="arguments"
                             helperText="press enter to expand"
                             sx={{ flexGrow: 1, display : 'flex' }}
+                            onChange={(event) => 
+                                props.setValue(JSON.stringify(parseActionPayloadWithInterpretation(
+                                    event.target.value, props.inputSchema)))
+                            }
                         />
     }
 }
