@@ -1,3 +1,3 @@
 export const appConfig = {
-    useHTTPs : false,
+    useHTTPs : true,
 }
